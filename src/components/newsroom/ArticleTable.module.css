@@ -1,0 +1,39 @@
+.bulk {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.select {
+  height: 32px;
+  padding: 0 32px 0 10px;
+  font: 400 14px/20px var(--font-sans);
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-muted) 50%), linear-gradient(135deg, var(--ink-muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 14px, calc(100% - 11px) 14px;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.count {
+  font: 400 13px/20px var(--font-mono);
+  color: var(--ink-muted);
+}
+
+.check {
+  width: 44px;
+  padding-right: 0 !important;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--navy);
+  vertical-align: middle;
+}

@@ -1,0 +1,764 @@
+'use client';
+
+import Link from 'next/link';
+import { useCallback, useEffect, useEffectEvent, useId, useRef, useState } from 'react';
+import { Button, ButtonLink } from '@/components/ds/Button';
+import { ConfirmButton } from '@/components/newsroom/ConfirmButton';
+import { BodyEditor, type BodyEditorHandle } from '@/components/newsroom/editor/BodyEditor';
+import { CheckboxField, SelectField, TextField } from '@/components/newsroom/Field';
+import forms from '@/components/newsroom/forms.module.css';
+import { StatusBadge } from '@/components/newsroom/StatusBadge';
+import { Notice } from '@/components/newsroom/ui';
+import { slugify } from '@/lib/slug';
+import { readingMinutes, wordCount } from '@/lib/doc/text';
+import { formatWib, toWibInput } from '@/lib/time';
+import { deleteArticle, findArticles, saveArticle } from '@/modules/editor/actions';
+import { ARTICLE_TYPES, type FieldErrors, MAX, type Source, TYPE_LABELS } from '@/modules/editor/input';
+import type { EditableArticle } from '@/modules/editor/queries';
+import { MIN_WORDS, UNTITLED_SLUG } from '@/modules/editor/rules';
+import { type ArticleStatus, canAutosave, CONFIRMATIONS, type Intent, intentLabel, statusActions } from '@/modules/editor/status';
+import styles from './editor-page.module.css';
+
+type Option = { id: string; name: string };
+type Related = { id: string; title: string };
+type Found = Awaited<ReturnType<typeof findArticles>>;
+
+const AUTOSAVE_MS = 10_000;
+
+const DONE: Partial<Record<Intent, string>> = {
+  save: 'Draft saved.',
+  review: 'Sent for review.',
+  draft: 'Moved back to draft.',
+  publish: 'Published.',
+  unschedule: 'Schedule cancelled. The article is a draft again.',
+  unpublish: 'Unpublished. Readers no longer see it.',
+  archive: 'Archived. Restore it to draft to edit it again.',
+  restore: 'Restored to draft.',
+};
+
+const ANCHORS: Record<string, string> = { authorIds: 'authors', sectionId: 'section', scheduledAt: 'schedule', body: 'body-label', sources: 'sources-title' };
+
+const FIELD_LABELS: Record<string, string> = {
+  title: 'Headline',
+  slug: 'Address',
+  sectionId: 'Section',
+  authorIds: 'Authors',
+  standfirst: 'Standfirst',
+  body: 'Article text',
+  scheduledAt: 'Publish time',
+  sources: 'Sources',
+  kicker: 'Label',
+  status: 'Status',
+};
+
+export function ArticleEditor({
+  article,
+  sections,
+  authors,
+  tags,
+  notice,
+}: {
+  article: EditableArticle;
+  sections: (Option & { slug: string })[];
+  authors: (Option & { role: string })[];
+  tags: Option[];
+  notice?: { tone: 'success' | 'error'; text: string } | null;
+}) {
+  const uid = useId();
+  const id = (field: string) => `${uid}-${field}`;
+  const body = useRef<BodyEditorHandle>(null);
+
+  const [title, setTitle] = useState(article.title);
+  const [slug, setSlug] = useState(article.slug);
+  const [slugTouched, setSlugTouched] = useState(
+    article.published_at !== null || !(UNTITLED_SLUG.test(article.slug) || article.slug === slugify(article.title)),
+  );
+  const [sectionId, setSectionId] = useState(article.section_id ?? '');
+  const [type, setType] = useState(article.type);
+  const [kicker, setKicker] = useState(article.kicker_label);
+  const [standfirst, setStandfirst] = useState(article.standfirst);
+  const [isBreaking, setIsBreaking] = useState(article.is_breaking);
+  const [authorIds, setAuthorIds] = useState(article.authorIds);
+  const [tagIds, setTagIds] = useState(article.tagIds);
+  const [related, setRelated] = useState<Related[]>(article.related.map(({ id: rid, title: t }) => ({ id: rid, title: t })));
+  const [sources, setSources] = useState<Source[]>(article.sources);
+  const [words, setWords] = useState(article.word_count);
+
+  const [version, setVersion] = useState(article.version);
+  const [status, setStatus] = useState<ArticleStatus>(article.status);
+  const [publishedAt, setPublishedAt] = useState(article.published_at);
+  const [scheduledAt, setScheduledAt] = useState(article.scheduled_at);
+  const [savedAt, setSavedAt] = useState(article.updated_at);
+  const [scheduleInput, setScheduleInput] = useState(article.scheduled_at ? toWibInput(new Date(article.scheduled_at)) : '');
+  const [scheduling, setScheduling] = useState(false);
+  const [majorUpdate, setMajorUpdate] = useState(false);
+
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState<Intent | null>(null);
+  const [autosaveFailed, setAutosaveFailed] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [message, setMessage] = useState(notice ?? null);
+  const [conflict, setConflict] = useState(false);
+  const changes = useRef(0);
+
+  const readOnly = status === 'archived';
+  const section = sections.find((s) => s.id === sectionId);
+  const actions = statusActions(status);
+
+  const touch = useCallback(() => {
+    changes.current += 1;
+    setDirty(true);
+  }, []);
+
+  function change<T>(setter: (value: T) => void) {
+    return (value: T) => {
+      setter(value);
+      touch();
+    };
+  }
+
+  const save = useCallback(
+    async (intent: Intent) => {
+      if (saving || conflict) return;
+      const startedAt = changes.current;
+      setSaving(intent);
+      const sendSchedule = intent === 'schedule' || (intent === 'update' && status === 'scheduled');
+      try {
+        const result = await saveArticle(
+          {
+            id: article.id,
+            version,
+            title,
+            slug,
+            slugAuto: !slugTouched,
+            sectionId: sectionId || null,
+            type,
+            kicker,
+            standfirst,
+            body: body.current?.getJSON(),
+            isBreaking,
+            authorIds,
+            tagIds,
+            relatedIds: related.map((r) => r.id),
+            sources,
+            scheduledAt: sendSchedule ? scheduleInput || null : null,
+            majorUpdate: intent === 'update' && majorUpdate,
+          },
+          intent,
+        );
+        if (result.ok) {
+          setVersion(result.version);
+          setStatus(result.status);
+          setPublishedAt(result.publishedAt);
+          setScheduledAt(result.scheduledAt);
+          setSavedAt(result.savedAt);
+          if (result.slug !== slug) setSlug(result.slug);
+          setErrors({});
+          setAutosaveFailed(false);
+          if (changes.current === startedAt) setDirty(false);
+          if (intent !== 'autosave') {
+            setScheduling(false);
+            setMajorUpdate(false);
+            const text =
+              intent === 'schedule' && result.scheduledAt
+                ? `Scheduled for ${formatWib(result.scheduledAt)} WIB.`
+                : intent === 'update'
+                  ? result.status === 'published'
+                    ? 'Update published.'
+                    : 'Changes saved.'
+                  : DONE[intent];
+            setMessage(text ? { tone: 'success', text } : null);
+          }
+        } else if (result.conflict) {
+          setConflict(true);
+        } else {
+          setErrors(result.errors ?? {});
+          if (intent === 'autosave') setAutosaveFailed(true);
+          else if (result.message) setMessage({ tone: 'error', text: result.message });
+          else setMessage(null);
+        }
+      } catch {
+        if (intent === 'autosave') setAutosaveFailed(true);
+        else setMessage({ tone: 'error', text: 'The server could not be reached. Your changes are still here. Try again.' });
+      } finally {
+        setSaving(null);
+      }
+    },
+    [saving, conflict, status, article.id, version, title, slug, slugTouched, sectionId, type, kicker, standfirst, isBreaking, authorIds, tagIds, related, sources, scheduleInput, majorUpdate],
+  );
+
+  // Autosave every 10 seconds while there are changes (drafts and articles in review only).
+  const autosaveTick = useEffectEvent(() => {
+    if (dirty && !saving && !conflict && canAutosave(status)) void save('autosave');
+  });
+  useEffect(() => {
+    const timer = setInterval(() => autosaveTick(), AUTOSAVE_MS);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Warn before leaving with unsaved changes, and save with Ctrl+S or Cmd+S.
+  const onBeforeUnload = useEffectEvent((event: BeforeUnloadEvent) => {
+    if (dirty) event.preventDefault();
+  });
+  const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+      event.preventDefault();
+      if (status === 'draft' || status === 'review') void save('save');
+      else if (status !== 'archived') void save('update');
+    }
+  });
+  useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => onBeforeUnload(event);
+    const keydown = (event: KeyboardEvent) => onKeyDown(event);
+    window.addEventListener('beforeunload', beforeUnload);
+    window.addEventListener('keydown', keydown);
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+      window.removeEventListener('keydown', keydown);
+    };
+  }, []);
+
+  function run(intent: Intent) {
+    if (intent === 'schedule' && !scheduling) {
+      setScheduling(true);
+      if (!scheduleInput) setScheduleInput(nextHourInput());
+      return;
+    }
+    void save(intent);
+  }
+
+  const problems = Object.entries(errors).filter(([, text]) => text);
+  const errorFor = (field: string) => errors[field];
+  const minutes = readingMinutes(words);
+  const saveState = conflict
+    ? 'Not saved'
+    : saving
+      ? 'Saving…'
+      : autosaveFailed
+        ? 'Not saved: fix the fields marked in red'
+        : dirty
+          ? canAutosave(status)
+            ? 'Unsaved changes'
+            : 'Unsaved changes: press Update to publish them'
+          : `Saved ${formatWib(savedAt, 'short')}`;
+
+  const actionButton = (intent: Intent, variant: 'primary' | 'secondary' | 'quiet') => {
+    const label = intent === 'schedule' && scheduling ? 'Confirm schedule' : intentLabel(intent, status);
+    const confirm = CONFIRMATIONS[intent];
+    const busy = saving === intent;
+    if (confirm) {
+      return (
+        <ConfirmButton
+          key={intent}
+          variant={variant}
+          fullWidth
+          disabled={Boolean(saving) || conflict}
+          title={confirm.title}
+          body={confirm.body}
+          confirmLabel={confirm.confirm}
+          danger={intent === 'archive' || intent === 'unpublish'}
+          onConfirm={() => run(intent)}
+        >
+          {busy ? 'Working…' : label}
+        </ConfirmButton>
+      );
+    }
+    return (
+      <Button key={intent} variant={variant} fullWidth disabled={Boolean(saving) || conflict} onClick={() => run(intent)}>
+        {busy ? (intent === 'save' ? 'Saving…' : 'Working…') : label}
+      </Button>
+    );
+  };
+
+  const primary = scheduling && actions.primary !== 'schedule' ? 'schedule' : actions.primary;
+  const others = scheduling ? [] : actions.others;
+  const availableAuthors = authors.filter((a) => !authorIds.includes(a.id));
+  const availableTags = tags.filter((t) => !tagIds.includes(t.id));
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.top}>
+        <Link href="/newsroom/articles" className={styles.back}>
+          ← Articles
+        </Link>
+        <StatusBadge status={status} />
+        <p className={styles.saveState} role="status" aria-live="polite">
+          {saveState}
+        </p>
+        <div className={styles.topLinks}>
+          <ButtonLink href={`/newsroom/articles/${article.id}/history`} size="sm" variant="quiet" icon="history">
+            History
+          </ButtonLink>
+          <ButtonLink href={`/newsroom/preview/${article.id}`} size="sm" icon="eye" target="_blank">
+            Preview
+          </ButtonLink>
+        </div>
+      </div>
+
+      {conflict && (
+        <Notice tone="error">
+          <span>This article changed in another window. Reload to see the latest version. Changes made here since your last save will be lost.</span>
+          <span>
+            <Button size="sm" variant="primary" onClick={() => window.location.reload()}>
+              Reload
+            </Button>
+          </span>
+        </Notice>
+      )}
+      {message && !conflict && <Notice tone={message.tone}>{message.text}</Notice>}
+      {readOnly && <Notice tone="info">Archived articles are read-only. Restore it to draft to edit it.</Notice>}
+
+      <div className={styles.grid}>
+        <div className={styles.main}>
+          <div className={styles.headlineField}>
+            <label htmlFor={id('title')} className={styles.fieldLabel}>
+              Headline
+            </label>
+            <textarea
+              id={id('title')}
+              className={styles.headline}
+              rows={1}
+              value={title}
+              placeholder="Write the headline"
+              maxLength={MAX.title + 20}
+              disabled={readOnly}
+              aria-invalid={errorFor('title') ? true : undefined}
+              aria-describedby={errorFor('title') ? id('title-error') : undefined}
+              onChange={(event) => {
+                const value = event.target.value.replace(/\n/g, ' ');
+                setTitle(value);
+                if (!slugTouched) setSlug(slugify(value) || slug);
+                touch();
+              }}
+            />
+            {errorFor('title') && (
+              <p id={id('title-error')} className={forms.error}>
+                {errorFor('title')}
+              </p>
+            )}
+          </div>
+          <div className={styles.headlineField}>
+            <label htmlFor={id('standfirst')} className={styles.fieldLabel}>
+              Standfirst
+            </label>
+            <textarea
+              id={id('standfirst')}
+              className={styles.standfirst}
+              rows={2}
+              value={standfirst}
+              placeholder="One or two sentences that tell the reader why this matters"
+              maxLength={MAX.standfirst + 20}
+              disabled={readOnly}
+              aria-invalid={errorFor('standfirst') ? true : undefined}
+              aria-describedby={errorFor('standfirst') ? id('standfirst-error') : undefined}
+              onChange={(event) => change(setStandfirst)(event.target.value)}
+            />
+            {errorFor('standfirst') && (
+              <p id={id('standfirst-error')} className={forms.error}>
+                {errorFor('standfirst')}
+              </p>
+            )}
+          </div>
+          <div className={styles.headlineField}>
+            <span className={styles.fieldLabel} id={id('body-label')}>
+              Article text
+            </span>
+            <BodyEditor
+              ref={body}
+              initial={article.body}
+              articleId={article.id}
+              editable={!readOnly}
+              invalid={Boolean(errorFor('body'))}
+              describedBy={errorFor('body') ? id('body-error') : undefined}
+              onChange={(text) => {
+                setWords(wordCount(text));
+                touch();
+              }}
+            />
+            {errorFor('body') && (
+              <p id={id('body-error')} className={forms.error}>
+                {errorFor('body')}
+              </p>
+            )}
+            <p className={styles.wordCount}>
+              {words} {words === 1 ? 'word' : 'words'}
+              {minutes > 0 && ` · ${minutes} min read`}
+              {words < MIN_WORDS && ` · ${MIN_WORDS} needed to publish`}
+            </p>
+          </div>
+        </div>
+
+        <aside className={styles.panel} aria-label="Article settings">
+          <section className={styles.card} aria-label="Status">
+            <div className={styles.statusHead}>
+              <StatusBadge status={status} />
+              <span className={styles.when}>
+                {status === 'scheduled' && scheduledAt
+                  ? `Publishes ${formatWib(scheduledAt)} WIB`
+                  : publishedAt
+                    ? `First published ${formatWib(publishedAt)} WIB`
+                    : 'Not published yet'}
+              </span>
+            </div>
+            {problems.length > 0 && (
+              <div className={styles.problems} role="alert">
+                <p>{problems.length === 1 ? 'One thing needs attention:' : `${problems.length} things need attention:`}</p>
+                <ul>
+                  {problems.map(([field, text]) => (
+                    <li key={field}>
+                      <a href={`#${id(ANCHORS[field] ?? field)}`}>
+                        {FIELD_LABELS[field] ?? field}
+                      </a>
+                      : {text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(scheduling || status === 'scheduled') && (
+              <TextField
+                id={id('schedule')}
+                label="Publish time (WIB)"
+                type="datetime-local"
+                value={scheduleInput}
+                onChange={(event) => change(setScheduleInput)(event.target.value)}
+                error={errorFor('scheduledAt')}
+              />
+            )}
+            {status === 'published' && (
+              <CheckboxField
+                id={id('major')}
+                label="Major update"
+                hint="Marks the article as updated and tells search engines. Use it for new facts, not for typo fixes."
+                checked={majorUpdate}
+                onChange={(event) => setMajorUpdate(event.target.checked)}
+              />
+            )}
+            <div className={styles.actions}>
+              {actionButton(primary, 'primary')}
+              {scheduling && (
+                <Button variant="quiet" fullWidth onClick={() => setScheduling(false)}>
+                  Cancel
+                </Button>
+              )}
+              {others.map((intent) => actionButton(intent, 'secondary'))}
+            </div>
+          </section>
+
+          <section className={styles.card} aria-label="Details">
+            <h2 className={styles.cardTitle}>Details</h2>
+            <TextField
+              id={id('slug')}
+              label="Address"
+              mono
+              value={slug}
+              disabled={readOnly}
+              error={errorFor('slug')}
+              hint={`presscompass.site/${section?.slug ?? 'section'}/${slug}${publishedAt ? ' · Changing it adds a redirect from the old address.' : ''}`}
+              onChange={(event) => {
+                setSlug(event.target.value);
+                setSlugTouched(true);
+                touch();
+              }}
+              onBlur={() => setSlug((current) => slugify(current) || current)}
+            />
+            <SelectField
+              id={id('section')}
+              label="Section"
+              value={sectionId}
+              disabled={readOnly}
+              error={errorFor('sectionId')}
+              onChange={(event) => change(setSectionId)(event.target.value)}
+            >
+              <option value="">Choose a section</option>
+              {sections.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </SelectField>
+            {sections.length === 0 && (
+              <p className={forms.hint}>
+                No sections yet. <Link href="/newsroom/sections/new">Create one</Link> first.
+              </p>
+            )}
+            <SelectField id={id('type')} label="Type" value={type} disabled={readOnly} onChange={(event) => change(setType)(event.target.value as typeof type)}>
+              {ARTICLE_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {TYPE_LABELS[t]}
+                </option>
+              ))}
+            </SelectField>
+            <TextField
+              id={id('kicker')}
+              label="Label"
+              optional
+              value={kicker}
+              disabled={readOnly}
+              maxLength={MAX.kicker}
+              error={errorFor('kicker')}
+              hint="Shown above the headline instead of the section name, for example Exclusive."
+              onChange={(event) => change(setKicker)(event.target.value)}
+            />
+            <CheckboxField
+              id={id('breaking')}
+              label="Breaking news"
+              hint="Highlights the article in the Latest strip."
+              checked={isBreaking}
+              disabled={readOnly}
+              onChange={(event) => change(setIsBreaking)(event.target.checked)}
+            />
+          </section>
+
+          <section className={styles.card} aria-labelledby={id('authors-title')}>
+            <h2 className={styles.cardTitle} id={id('authors-title')}>
+              Byline
+            </h2>
+            {errorFor('authorIds') && <p className={forms.error}>{errorFor('authorIds')}</p>}
+            {authorIds.length > 0 && (
+              <ol className={styles.chosenList}>
+                {authorIds.map((authorId, index) => {
+                  const author = authors.find((a) => a.id === authorId);
+                  return (
+                    <li key={authorId}>
+                      <span>
+                        {author?.name ?? 'Removed author'}
+                        {author?.role && <small>{author.role}</small>}
+                      </span>
+                      {!readOnly && (
+                        <span className={styles.rowButtons}>
+                          <Button
+                            size="sm"
+                            variant="quiet"
+                            icon="arrow-up"
+                            aria-label={`Move ${author?.name} up`}
+                            disabled={index === 0}
+                            onClick={() => change(setAuthorIds)(move(authorIds, index, -1))}
+                          />
+                          <Button size="sm" variant="quiet" icon="x" aria-label={`Remove ${author?.name}`} onClick={() => change(setAuthorIds)(authorIds.filter((a) => a !== authorId))} />
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+            {!readOnly && (
+              <SelectField
+                id={id('authors')}
+                label="Add an author"
+                value=""
+                onChange={(event) => event.target.value && change(setAuthorIds)([...authorIds, event.target.value])}
+                hint={authors.length === 0 ? undefined : authorIds.length > 1 ? 'Bylines appear in this order.' : undefined}
+              >
+                <option value="">{availableAuthors.length ? 'Choose…' : 'Everyone is on the byline'}</option>
+                {availableAuthors.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </SelectField>
+            )}
+            {authors.length === 0 && (
+              <p className={forms.hint}>
+                No authors yet. <Link href="/newsroom/authors/new">Add one</Link> first.
+              </p>
+            )}
+          </section>
+
+          <section className={styles.card} aria-labelledby={id('tags-title')}>
+            <h2 className={styles.cardTitle} id={id('tags-title')}>
+              Tags
+            </h2>
+            {tagIds.length > 0 && (
+              <ul className={styles.chips}>
+                {tagIds.map((tagId) => {
+                  const tag = tags.find((t) => t.id === tagId);
+                  return (
+                    <li key={tagId} className={styles.chip}>
+                      {tag?.name ?? 'Removed tag'}
+                      {!readOnly && (
+                        <button type="button" aria-label={`Remove tag ${tag?.name}`} onClick={() => change(setTagIds)(tagIds.filter((t) => t !== tagId))}>
+                          ×
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {!readOnly && (
+              <SelectField id={id('tags')} label="Add a tag" value="" onChange={(event) => event.target.value && change(setTagIds)([...tagIds, event.target.value])}>
+                <option value="">{availableTags.length ? 'Choose…' : 'No more tags'}</option>
+                {availableTags.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </SelectField>
+            )}
+            <p className={forms.hint}>
+              <Link href="/newsroom/tags/new" target="_blank">
+                New tag
+              </Link>{' '}
+              opens in a new tab. Reload this page after creating it.
+            </p>
+          </section>
+
+          <RelatedPicker articleId={article.id} related={related} readOnly={readOnly} onChange={change(setRelated)} uid={uid} />
+
+          <section className={styles.card} aria-labelledby={id('sources-title')}>
+            <h2 className={styles.cardTitle} id={id('sources-title')}>
+              Sources
+            </h2>
+            {errorFor('sources') && <p className={forms.error}>{errorFor('sources')}</p>}
+            {sources.map((source, index) => (
+              <fieldset key={index} className={styles.source}>
+                <legend className={styles.sourceLegend}>Source {index + 1}</legend>
+                <TextField id={id(`source-title-${index}`)} label="Title" value={source.title} disabled={readOnly} onChange={(e) => change(setSources)(edit(sources, index, 'title', e.target.value))} />
+                <TextField id={id(`source-url-${index}`)} label="Link" type="url" mono value={source.url} disabled={readOnly} placeholder="https://" onChange={(e) => change(setSources)(edit(sources, index, 'url', e.target.value))} />
+                <div className={forms.row}>
+                  <TextField id={id(`source-publisher-${index}`)} label="Publisher" optional value={source.publisher} disabled={readOnly} onChange={(e) => change(setSources)(edit(sources, index, 'publisher', e.target.value))} />
+                  <TextField id={id(`source-accessed-${index}`)} label="Accessed" optional type="date" value={source.accessed} disabled={readOnly} onChange={(e) => change(setSources)(edit(sources, index, 'accessed', e.target.value))} />
+                </div>
+                {!readOnly && (
+                  <Button size="sm" variant="quiet" icon="trash" onClick={() => change(setSources)(sources.filter((_, i) => i !== index))}>
+                    Remove source
+                  </Button>
+                )}
+              </fieldset>
+            ))}
+            {!readOnly && sources.length < MAX.sources && (
+              <Button size="sm" icon="plus" onClick={() => change(setSources)([...sources, { title: '', url: '', publisher: '', accessed: toWibInput(new Date()).slice(0, 10) }])}>
+                Add source
+              </Button>
+            )}
+          </section>
+
+          {status !== 'published' && (
+            <section className={styles.card} aria-label="Delete">
+              <form action={deleteArticle}>
+                <input type="hidden" name="id" value={article.id} />
+                <ConfirmButton
+                  variant="quiet"
+                  size="sm"
+                  icon="trash"
+                  title="Delete this article?"
+                  body="The article and its history are removed for good. This cannot be undone."
+                  confirmLabel="Delete article"
+                  danger
+                >
+                  Delete article
+                </ConfirmButton>
+              </form>
+            </section>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function RelatedPicker({
+  articleId,
+  related,
+  readOnly,
+  onChange,
+  uid,
+}: {
+  articleId: string;
+  related: Related[];
+  readOnly: boolean;
+  onChange: (value: Related[]) => void;
+  uid: string;
+}) {
+  const [query, setQuery] = useState('');
+  const [found, setFound] = useState<Found | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  async function search() {
+    setSearching(true);
+    try {
+      setFound((await findArticles(query, articleId)).filter((a) => !related.some((r) => r.id === a.id)));
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  return (
+    <section className={styles.card} aria-labelledby={`${uid}-related-title`}>
+      <h2 className={styles.cardTitle} id={`${uid}-related-title`}>
+        Related articles
+      </h2>
+      <p className={forms.hint}>Your picks appear first under the article. The rest fill in from the same section and tags.</p>
+      {related.length > 0 && (
+        <ol className={styles.chosenList}>
+          {related.map((item) => (
+            <li key={item.id}>
+              <span>{item.title || 'Untitled'}</span>
+              {!readOnly && <Button size="sm" variant="quiet" icon="x" aria-label={`Remove ${item.title || 'Untitled'}`} onClick={() => onChange(related.filter((r) => r.id !== item.id))} />}
+            </li>
+          ))}
+        </ol>
+      )}
+      {!readOnly && related.length < MAX.related && (
+        <>
+          <div className={styles.searchRow}>
+            <TextField
+              id={`${uid}-related-query`}
+              label="Find an article"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  void search();
+                }
+              }}
+            />
+            <Button size="sm" onClick={() => void search()} disabled={searching}>
+              {searching ? 'Searching…' : 'Search'}
+            </Button>
+          </div>
+          {found && (
+            <ul className={styles.results} aria-label="Search results">
+              {found.length === 0 && <li className={forms.hint}>No articles match.</li>}
+              {found.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className={styles.result}
+                    onClick={() => {
+                      onChange([...related, { id: item.id, title: item.title }]);
+                      setFound((current) => current?.filter((f) => f.id !== item.id) ?? null);
+                    }}
+                  >
+                    <span>{item.title || 'Untitled'}</span>
+                    <small>Add · {item.section?.name ?? 'No section'}</small>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function move<T>(list: T[], index: number, by: number): T[] {
+  const next = [...list];
+  const [item] = next.splice(index, 1);
+  next.splice(index + by, 0, item);
+  return next;
+}
+
+function edit(sources: Source[], index: number, key: keyof Source, value: string): Source[] {
+  return sources.map((source, i) => (i === index ? { ...source, [key]: value } : source));
+}
+
+/** The next full hour in WIB, as a starting point for the schedule field. */
+function nextHourInput(): string {
+  return `${toWibInput(new Date(Date.now() + 60 * 60 * 1000)).slice(0, 14)}00`;
+}

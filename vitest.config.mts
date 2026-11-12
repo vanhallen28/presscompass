@@ -10,8 +10,10 @@ export default defineConfig({
     },
   },
   test: {
+    // Plain class names in rendered markup, so component tests read like the HTML they check.
+    css: { modules: { classNameStrategy: 'non-scoped' } },
     projects: [
-      { extends: true, test: { name: 'unit', include: ['tests/unit/**/*.test.ts'], environment: 'node' } },
+      { extends: true, test: { name: 'unit', include: ['tests/unit/**/*.test.{ts,tsx}'], environment: 'node' } },
       {
         extends: true,
         test: { name: 'db', include: ['tests/db/**/*.test.ts'], environment: 'node', fileParallelism: false, testTimeout: 30000, hookTimeout: 60000 },
