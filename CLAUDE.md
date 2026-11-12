@@ -32,6 +32,16 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - Design tokens come from `src/styles/tokens.json` (the design system). Run `npm run tokens` after editing it.
   Components use the CSS variables and the `.type-*` classes, never hard-coded colours.
 
+## Article body
+
+- The stored body is the editor's JSON restricted to `src/lib/doc/schema.ts`. Four places must agree when a block is
+  added or changed: the schema, `src/lib/doc/sanitize.ts` (runs on every save), the Tiptap extensions in
+  `src/components/newsroom/editor/extensions.ts`, and `src/modules/content/ArticleBody.tsx` (renders it, no raw HTML).
+- ProseMirror keeps attributes in null-prototype objects, which Server Action arguments drop: the editor sends
+  `JSON.parse(JSON.stringify(editor.getJSON()))`.
+- Saving goes through the SQL function `save_article` (version check, slug, relations, revision) via `prepareSave()`.
+  Status rules live in `src/modules/editor/status.ts`, publish rules in `rules.ts`.
+
 ## Tests (all without Docker)
 
 - `npm test`: unit (Vitest).
@@ -41,6 +51,9 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
   (fake Auth + a Data API that runs real SQL on a fresh local PostgreSQL database `presscompass_e2e`).
   Locally you can use an installed Chrome: `PW_CHROME_PATH=/usr/bin/google-chrome`.
 - Locators for alerts are scoped to `main`: Next.js renders its own route announcer with `role="alert"`.
+- E2E locators use roles (`getByRole`), not `getByLabel`: hidden, kept-alive pages still match labels.
+- `npm run fake:supabase` plus `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:3101 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_dev npm run dev`
+  runs the site against the fake Supabase for local checks (user `owner@example.com`, password in `tests/fake-supabase/auth.mjs`).
 
 ## Delivering updates to the owner
 

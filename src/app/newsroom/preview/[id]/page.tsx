@@ -110,9 +110,13 @@ export default async function PreviewPage({ params, searchParams }: { params: Pr
               <ol>
                 {view.sources.map((source, index) => (
                   <li key={index}>
-                    <a href={source.url} rel="noopener">
-                      {source.title}
-                    </a>
+                    {/^https?:\/\//i.test(source.url) ? (
+                      <a href={source.url} rel="noopener">
+                        {source.title}
+                      </a>
+                    ) : (
+                      source.title
+                    )}
                     {source.publisher && `, ${source.publisher}`}
                     {source.accessed && ` (accessed ${formatWib(`${source.accessed}T00:00:00+07:00`, 'date')})`}
                   </li>

@@ -118,9 +118,9 @@ export function BlockDialog({
   }
 
   return createPortal(
-    <dialog ref={dialog} className={`${ui.dialog} ${styles.blockDialog}`} aria-labelledby={`${uid}-title`} onCancel={onClose} onClose={onClose}>
+    <dialog ref={dialog} className={`${ui.dialog} ${styles.blockDialog}`} aria-labelledby={`${uid}-heading`} onCancel={onClose} onClose={onClose}>
       <form className={forms.form} onSubmit={submit} noValidate>
-        <h2 id={`${uid}-title`} className={ui.dialogTitle}>
+        <h2 id={`${uid}-heading`} className={ui.dialogTitle}>
           {TITLES[kind]}
         </h2>
 
@@ -165,7 +165,7 @@ export function BlockDialog({
                     label={`Figure ${index + 1}`}
                     value={item.value}
                     onChange={(e) => set('items', updateItem(values.items, index, 'value', e.target.value))}
-                    placeholder="31.5m"
+                    placeholder={index === 0 ? '31.5m' : undefined}
                     maxLength={LIMITS.figureValue}
                     mono
                   />
@@ -174,7 +174,7 @@ export function BlockDialog({
                     label={`Label ${index + 1}`}
                     value={item.label}
                     onChange={(e) => set('items', updateItem(values.items, index, 'label', e.target.value))}
-                    placeholder="tonnes of rice this season"
+                    placeholder={index === 0 ? 'tonnes of rice this season' : undefined}
                     maxLength={LIMITS.figureLabel}
                   />
                 </div>

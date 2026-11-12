@@ -1,4 +1,4 @@
-# Pemasangan PressCompass (v0.1.1)
+# Pemasangan PressCompass
 
 Panduan sekali jalan untuk pemilik: Supabase, komputer, GitHub, dan Vercel. Semua gratis dan tanpa Docker.
 Rahasia (password database, secret key) tidak pernah dikirim lewat percakapan; isi langsung di tempatnya.
@@ -42,7 +42,7 @@ PressCompass memakai **satu** proyek Supabase (`presscompass`) untuk situs produ
 
 5. Buka http://localhost:3000/newsroom dan masuk. Kartu **Foundation** di Dashboard harus menunjukkan **Database Connected** dan **Deployment Preview or local**.
 
-Setiap pembaruan yang membawa migrasi cukup menjalankan `npm run db:push` sekali.
+Setiap pembaruan yang membawa migrasi cukup menjalankan `npm run db:push` sekali. Langkah memasang versi baru: `docs/ops/update.md`.
 
 ## C. GitHub
 

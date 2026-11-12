@@ -21,8 +21,12 @@ const ACTIONS = [
 
 /** The article list with checkboxes for actions on several articles at once. */
 export function ArticleTable({ rows }: { rows: ArticleListRow[] }) {
-  const [state, formAction, pending] = useActionState<BulkState, FormData>(bulkArticles, {});
   const [selected, setSelected] = useState<string[]>([]);
+  const [state, formAction, pending] = useActionState<BulkState, FormData>(async (previous, form) => {
+    const result = await bulkArticles(previous, form);
+    setSelected([]);
+    return result;
+  }, {});
   const [action, setAction] = useState('');
   const uid = useId();
   const allSelected = rows.length > 0 && selected.length === rows.length;

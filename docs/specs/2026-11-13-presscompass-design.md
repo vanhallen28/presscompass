@@ -1,7 +1,7 @@
 # PressCompass · Design Spec (website + Newsroom CMS)
 
 **Tanggal:** 2026-11-13
-**Status:** disetujui pemilik 13 November 2026, dibangun mulai v0.1.0. Revisi v0.1.1: satu proyek Supabase.
+**Status:** disetujui pemilik 13 November 2026, dibangun mulai v0.1.0. Revisi v0.1.1: satu proyek Supabase. v0.2.0: Newsroom inti (lihat catatan lingkup di §17).
 **Pemilik:** pemilik PressCompass (pengguna CMS tunggal)
 **Desain:** design system https://claude.ai/artifact/D3Mgp73bxchiin6SNrCxS3 dan preview `presscompass-preview.html` (Front page, Article, Newsroom CMS)
 **Catatan brand:** PROJECT WEB `claude/presscompass-brand-design-spec.md`
@@ -366,7 +366,7 @@ Keputusan pemilik 13 November 2026: semua gambar lewat Cloudinary, sama dengan p
 
 - **Unit (Vitest):** `seo`, `indexer` (dengan adapter palsu dan repo memori: dedup, jendela, retry, kuota, urutan cek), konversi dokumen editor ke HTML, slug dan redirect, aturan terbit, URL gambar Cloudinary per preset.
 - **Database:** migrasi dijalankan di Postgres bawaan runner GitHub Actions dengan skema `auth` tiruan (peran `anon`, `authenticated`, fungsi `auth.uid()`), lalu tes RLS: `anon` tidak bisa membaca draf, tidak bisa menulis apa pun, dan pemilik bisa.
-- **E2E (Playwright):** situs publik dengan adapter `content` memori (beranda, artikel, rubrik, sitemap, RSS, 404, tema gelap, axe). Alur CMS penuh diuji terhadap proyek `presscompass-preview` lewat perintah terpisah, bukan setiap push.
+- **E2E (Playwright):** terhadap build produksi dan Supabase tiruan (`tests/fake-supabase/`): Auth tiruan + Data API yang menjalankan SQL sungguhan di PostgreSQL lokal dengan peran dan RLS Supabase. Alur Newsroom penuh (rubrik, tag, penulis, editor, status, jadwal, riwayat, konflik, aksi massal, axe) diuji di setiap push; situs publik menyusul dengan cara yang sama.
 - **Kualitas:** Lighthouse CI (beranda, artikel, rubrik), axe, design-audit sebelum rilis.
 - **CI:** setiap push dan pull request: type check, lint, unit, database, build, E2E, Lighthouse. Tanpa Docker dan tanpa rahasia produksi.
 
@@ -388,12 +388,14 @@ Keputusan pemilik 13 November 2026: semua gambar lewat Cloudinary, sama dengan p
 
 Setiap rencana ditulis tepat sebelum dikerjakan (skill writing-plans), dieksekusi task demi task dengan review, lalu dikirim sebagai zip bernomor versi.
 
+Catatan lingkup v0.2.0: blok gambar dan gambar utama pindah ke Rencana 3 (butuh pustaka media), blok Chart ke Rencana 4 (digambar SVG oleh situs), tab SEO editor tetap Rencana 6. Terbit terjadwal berjalan saat Newsroom dibuka (`publish_due_articles()`); pemanggil otomatis datang bersama situs publik.
+
 | Rencana | Isi | Versi |
 |---|---|---|
 | 1. Fondasi | proyek Next.js (npm, Node 26), token dan font dari design system, komponen dasar, skema Supabase v1 + RLS, tiga klien Supabase, login Newsroom, penjaga lingkungan, CI, `CLAUDE.md` | v0.1.0 |
 | 2. Newsroom inti | kerangka CMS, Rubrik, Tag, Penulis, Artikel (editor blok, alur status, jadwal, autosave, revisi, pratinjau) | v0.2.0 |
-| 3. Media Cloudinary | unggah bertanda tangan, transformasi masuk, loader `next/image`, pustaka dan pemilih media | v0.3.0 |
-| 4. Situs publik | beranda, artikel, rubrik, penulis, tag, halaman, cari, 404, header, footer, pita Latest, mode gelap, cache bertag | v0.4.0 |
+| 3. Media Cloudinary | unggah bertanda tangan, transformasi masuk, loader `next/image`, pustaka dan pemilih media, gambar utama + keterangan, blok gambar, aturan terbit "gambar utama dengan alt" | v0.3.0 |
+| 4. Situs publik | beranda, artikel, rubrik, penulis, tag, halaman, cari, 404, header, footer, pita Latest, mode gelap, cache bertag, blok Chart (SVG), endpoint cron untuk terbit terjadwal + revalidasi | v0.4.0 |
 | 5. Semua bisa diedit | penyusun beranda, page builder, navigasi dan footer, pengaturan situs, newsletter, form kontak, Pembaca | v0.5.0 |
 | 6. SEO | metadata, JSON-LD, sitemap + news, RSS, robots, OG otomatis, redirect, log 404, panel SEO dan Writing check | v0.6.0 |
 | 7. Mesin Indexing + Dashboard SEO | antrean, adapter Google dan IndexNow, Supabase Cron, status indeks, Search Analytics, dashboard, pemeriksa tautan | v0.7.0 |

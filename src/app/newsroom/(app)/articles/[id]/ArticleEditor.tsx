@@ -8,7 +8,7 @@ import { BodyEditor, type BodyEditorHandle } from '@/components/newsroom/editor/
 import { CheckboxField, SelectField, TextField } from '@/components/newsroom/Field';
 import forms from '@/components/newsroom/forms.module.css';
 import { StatusBadge } from '@/components/newsroom/StatusBadge';
-import { Notice } from '@/components/newsroom/ui';
+import { Notice, ui } from '@/components/newsroom/ui';
 import { slugify } from '@/lib/slug';
 import { readingMinutes, wordCount } from '@/lib/doc/text';
 import { formatWib, toWibInput } from '@/lib/time';
@@ -277,6 +277,7 @@ export function ArticleEditor({
 
   return (
     <div className={styles.page}>
+      <h1 className={ui.srOnly}>Edit article</h1>
       <div className={styles.top}>
         <Link href="/newsroom/articles" className={styles.back}>
           ← Articles

@@ -1,5 +1,21 @@
 # Riwayat versi
 
+## v0.2.0 · 13 November 2026 · Newsroom inti (Rencana 2)
+
+- **Articles:** daftar dengan tab status dan jumlahnya, cari (judul, alamat, penulis), filter rubrik dan penulis, 25 baris per halaman, dan aksi massal (Publish, Unpublish, Archive, Delete) yang menyebut artikel mana yang belum siap terbit dan kenapa.
+- **Editor artikel:** judul, standfirst, isi dengan editor blok (H2, H3, tebal, miring, tautan, daftar, kutipan, pemisah, tabel, Pull quote, Key figures, Editor's note, video YouTube yang baru dimuat setelah diklik, kartu Read more), rubrik, jenis, label, breaking, penulis berurutan, tag, artikel terkait, dan sumber.
+- **Alur status:** Draft → In review → Published atau Scheduled (tanggal dan jam WIB) → Archived, dengan satu tombol utama per status. Unpublish, Archive, dan Delete meminta konfirmasi. Artikel terbit tidak bisa dihapus sebelum dibatalkan terbitnya.
+- **Aturan terbit:** judul, alamat, rubrik, minimal satu penulis, standfirst, dan isi minimal 150 kata. Yang kurang ditulis di kolomnya. Aturan gambar utama menyusul bersama pustaka media (v0.3.0).
+- **Autosave** setiap 10 detik untuk Draft dan In review; artikel terbit disimpan lewat tombol Update (dengan sakelar Major update). Ctrl/Cmd+S menyimpan. Simpan dari jendela lama ditolak dengan pesan "This article changed in another window".
+- **Riwayat versi:** 50 versi terakhir per artikel, bisa dilihat dan dipulihkan (keadaan sekarang disimpan dulu sebagai "Before restore").
+- **Pratinjau** artikel dalam tata letak artikel situs, termasuk versi lama dari riwayat.
+- **Sections, Tags, Authors:** buat, ubah, hapus (diblokir bila masih dipakai), urutan navigasi rubrik, tautan profil penulis.
+- **Redirect otomatis 308** bila alamat artikel terbit berubah (slug atau rubrik), atau slug rubrik, tag, dan penulis berubah. Rantai redirect dipendekkan.
+- **Dashboard:** Published today, In review, Scheduled (dan jadwal berikutnya), Drafts, artikel terbaru, status sistem.
+- **Migrasi baru** `20261114000100_newsroom_core.sql`: jalankan `npm run db:push` sebelum push ke GitHub.
+- Tes: 59 unit, 32 database, 35 E2E. E2E kini memakai Supabase tiruan yang menjalankan SQL sungguhan di PostgreSQL lokal, jadi RLS dan fungsi database ikut teruji.
+- Perbaikan: peringatan `turbopack.root` di `npm run dev` hilang.
+
 ## v0.1.1 · 13 November 2026 · Satu proyek Supabase
 
 - Permintaan pemilik: cukup **satu** proyek Supabase (`presscompass`) untuk produksi, deploy Preview Vercel, dan komputer Anda.
