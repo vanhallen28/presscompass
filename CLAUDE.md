@@ -35,7 +35,8 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - `npm test`: unit (Vitest).
 - `npm run test:db`: migrations + RLS on plain PostgreSQL with a Supabase stub (`tests/db/supabase-stub.sql`).
   Locally: `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres`.
-- `npm run test:e2e`: Playwright against a production build and `tests/e2e/mock-supabase.mjs`.
+- `npm run test:e2e`: Playwright against a production build and the fake Supabase in `tests/fake-supabase/`
+  (fake Auth + a Data API that runs real SQL on a fresh local PostgreSQL database `presscompass_e2e`).
   Locally you can use an installed Chrome: `PW_CHROME_PATH=/usr/bin/google-chrome`.
 - Locators for alerts are scoped to `main`: Next.js renders its own route announcer with `role="alert"`.
 

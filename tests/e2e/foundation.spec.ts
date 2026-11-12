@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-// Password the mock Supabase accepts (tests/e2e/mock-supabase.mjs).
+// Password the fake Supabase accepts (tests/fake-supabase/auth.mjs).
 const PASSWORD = 'correct-horse-battery-staple';
 
 test.describe('holding page', () => {

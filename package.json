@@ -18,11 +18,17 @@
     "db:login": "npx -y supabase@3.1.0 login",
     "db:link": "npx -y supabase@3.1.0 link",
     "db:push": "npx -y supabase@3.1.0 db push --remote",
+    "fake:supabase": "node tests/fake-supabase/server.mjs",
     "staff:grant": "node --env-file=.env scripts/grant-staff.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.119.0",
+    "@tiptap/extension-table": "3.32.3",
+    "@tiptap/extensions": "3.32.3",
+    "@tiptap/pm": "3.32.3",
+    "@tiptap/react": "3.32.3",
+    "@tiptap/starter-kit": "3.32.3",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// E2E runs against a production build and a small mock of the Supabase Auth and Data APIs
-// (tests/e2e/mock-supabase.mjs), so no real Supabase project is needed.
+// E2E runs against a production build and a fake Supabase (tests/fake-supabase/server.mjs): fake Auth
+// plus a Data API that runs real SQL on a fresh local PostgreSQL database, so no Supabase project is needed.
 const PORT = 3100;
 const MOCK_SUPABASE_PORT = 3101;
 const E2E_ENV = {
@@ -28,10 +28,10 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'node tests/e2e/mock-supabase.mjs',
+      command: 'node tests/fake-supabase/server.mjs',
       port: MOCK_SUPABASE_PORT,
-      reuseExistingServer: !process.env.CI,
-      env: { MOCK_SUPABASE_PORT: String(MOCK_SUPABASE_PORT) },
+      reuseExistingServer: false,
+      env: { FAKE_SUPABASE_PORT: String(MOCK_SUPABASE_PORT), FAKE_DATABASE_NAME: 'presscompass_e2e' },
     },
     {
       command: `npm run build && npm run start -- --port ${PORT}`,
