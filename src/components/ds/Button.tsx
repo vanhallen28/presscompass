@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes } from 'react';
+import Link from 'next/link';
+import type { ButtonHTMLAttributes, ComponentProps } from 'react';
 import { Icon, type IconName } from './Icon';
 import styles from './Button.module.css';
 
@@ -32,5 +33,22 @@ export function Button({
       {children && <span>{children}</span>}
       {iconAfter && <Icon name={iconAfter} size={iconSize} />}
     </button>
+  );
+}
+
+type ButtonLinkProps = ComponentProps<typeof Link> & {
+  variant?: 'primary' | 'secondary' | 'quiet';
+  size?: 'md' | 'sm';
+  icon?: IconName;
+};
+
+/** A link that looks like a Button, for navigation (new item, back, preview). */
+export function ButtonLink({ variant = 'secondary', size = 'md', icon, className, children, ...rest }: ButtonLinkProps) {
+  const classes = [styles.button, styles[variant], styles[size], !children && styles.iconOnly, className].filter(Boolean).join(' ');
+  return (
+    <Link className={classes} {...rest}>
+      {icon && <Icon name={icon} size={size === 'sm' ? 16 : 18} />}
+      {children && <span>{children}</span>}
+    </Link>
   );
 }

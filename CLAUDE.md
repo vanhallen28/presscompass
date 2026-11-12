@@ -27,6 +27,8 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - Every protected Newsroom layout, page and Server Action calls `requireStaff()`. `src/proxy.ts` is only an optimistic check.
 - Cache Components is on. Newsroom segments export `instant = false`; anything that reads the session goes through
   `createSessionClient()`, which calls `connection()` first.
+- Next keeps recently visited pages in the DOM (hidden) for instant back navigation, so never hard-code element
+  ids in Newsroom components: use `useId()` (client) or `aria-label` (server), or labels point at a hidden page's field.
 - Design tokens come from `src/styles/tokens.json` (the design system). Run `npm run tokens` after editing it.
   Components use the CSS variables and the `.type-*` classes, never hard-coded colours.
 

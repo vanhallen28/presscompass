@@ -7,6 +7,9 @@ import styles from './newsroom.module.css';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
+// The Newsroom reads the session on every request, so its pages block on the server (Cache Components).
+export const instant = false;
+
 async function databaseCheck(): Promise<{ ok: boolean; detail: string }> {
   try {
     const supabase = await createSessionClient();

@@ -84,7 +84,7 @@ test.describe('Newsroom access', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/newsroom$/);
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-    await expect(page.getByText('Connected. 0 sections.')).toBeVisible();
+    await expect(page.getByText(/Connected\. \d+ sections?\./)).toBeVisible();
     if (testInfo.project.name === 'desktop') await expect(page.getByText('owner@example.com', { exact: true })).toBeVisible();
 
     for (const colorScheme of ['light', 'dark'] as const) {

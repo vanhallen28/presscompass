@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Logo } from '@/components/ds/Logo';
 import { Button } from '@/components/ds/Button';
-import { Icon } from '@/components/ds/Icon';
+import { SideNav } from '@/components/newsroom/SideNav';
 import { signOut } from '@/modules/auth/actions';
 import { requireStaff } from '@/modules/auth/staff';
 import styles from './newsroom.module.css';
@@ -22,12 +22,7 @@ export default async function NewsroomLayout({ children }: { children: ReactNode
           <Logo height={24} />
           <p className={styles.brandLabel}>NEWSROOM</p>
         </div>
-        <nav className={styles.nav} aria-label="Newsroom sections">
-          <a href="/newsroom" aria-current="page">
-            <Icon name="grid" />
-            Dashboard
-          </a>
-        </nav>
+        <SideNav className={styles.nav} groupClassName={styles.navGroup} labelClassName={styles.navLabel} />
         <div className={styles.user}>
           <p className={styles.userEmail}>{staff.email}</p>
           <form action={signOut}>

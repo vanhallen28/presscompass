@@ -11,6 +11,10 @@
   transition: background-color 120ms ease-out, border-color 120ms ease-out;
 }
 
+a.button {
+  text-decoration: none;
+}
+
 .md {
   height: 40px;
   padding: 0 var(--space-4);
@@ -71,4 +75,10 @@
 .iconOnly.sm {
   width: 32px;
   padding: 0;
+}
+
+.quiet:disabled,
+.quiet[aria-disabled='true'] {
+  background: transparent;
+  border-color: transparent;
 }
