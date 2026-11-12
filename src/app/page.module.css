@@ -1,0 +1,24 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  border-top: var(--rule-heavy) solid var(--ink);
+}
+
+.logo {
+  color: var(--ink);
+}
+
+.tagline {
+  color: var(--ink-secondary);
+}
+
+.note {
+  color: var(--ink-muted);
+  max-width: 36ch;
+}
