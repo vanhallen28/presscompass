@@ -3048,3 +3048,15 @@ git tag -a v0.1.0 -m "PressCompass v0.1.0: foundation"
 - **Cakupan spesifikasi Rencana 1:** proyek Next.js npm/Node 26 (Task 1); token dan font dari design system, komponen dasar (Task 2); skema Supabase v1 + RLS (Task 3, tabel §6 kecuali tabel sistem Rencana 5 dan 7 yang menyusul secara aditif); tiga klien Supabase dan penjaga lingkungan (Task 4); login Newsroom (Task 5); CI dan `CLAUDE.md` (Task 1, 6). Storage Supabase tidak dibuat karena gambar lewat Cloudinary (keputusan pemilik 13 November).
 - **Ditunda dengan sengaja:** tabel sistem (`indexing_*`, `search_*`, `newsletter_subscribers`, `contact_messages`, `rate_limits`, `not_found_log`) menunggu rencana yang memakainya; header keamanan dan cadangan di Rencana 8; MFA dan halaman Account di Rencana 2; keputusan preload font Newsreader (sekarang dua file, 279 KB) diukur ulang dengan Lighthouse di Rencana 4.
 - **Konsistensi nama:** `createSessionClient`, `requireStaff`, `safeNextPath`, `loginUrl`, `deployEnv`, `checkEnvironmentMarker` dipakai sama di semua task.
+
+---
+
+## Revisi v0.1.1 (13 November 2026): satu proyek Supabase
+
+Permintaan pemilik: "bisakah membuat project supabase nya hanya satu saja?" Dijalankan sebagai patch Rencana 1.
+
+- **Migrasi** `supabase/migrations/20261113000200_single_project.sql`: hapus baris `app_meta.environment`, tulis `app_meta.project = "presscompass"`.
+- **Pengaman:** `src/lib/environment-guard.ts` kini `checkProjectMarker(stored)` dan `assertProject()`; `src/instrumentation.ts` memanggil `assertProject()`. Deploy menolak berjalan bila penanda tidak ada (kunci proyek lain atau migrasi belum diterapkan) atau berisi nama proyek lain. Pembeda Production/Preview dihapus karena keduanya memakai proyek yang sama.
+- **Dashboard:** baris "Deployment" menulis Production atau Preview or local.
+- **Tes:** `tests/unit/environment-guard.test.ts` (3 tes penanda proyek), `tests/db/rls.test.ts` menambah tes penanda (database 16 tes).
+- **Dokumen:** `docs/ops/setup.md` satu proyek, env Vercel sama di semua lingkungan; `CLAUDE.md` mewajibkan adapter layanan luar `fake` di luar Production; spesifikasi §2, §4, §18, §19 direvisi.

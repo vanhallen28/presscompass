@@ -19,6 +19,9 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - Three clients in `src/lib/supabase/clients.ts`: `createPublicClient` (site reads, anon + RLS), `createSessionClient`
   (Newsroom, authenticated + `is_staff()`), `createAdminClient` (secret key: cron, indexing, reader forms). Never import
   these from client components.
+- One Supabase project serves production, Vercel Preview and the owner's computer (v0.1.1). Anything that talks to
+  outside services (Google, IndexNow) must use a fake adapter outside Vercel Production. `src/instrumentation.ts`
+  refuses to start when `app_meta.project` is not `presscompass` (wrong keys or migrations missing).
 - Every table has Row Level Security. A migration that adds a table also adds its policies and a test in `tests/db/`.
 - Migrations live in `supabase/migrations/`, are additive, and are applied with `npm run db:push` (Supabase CLI, no Docker).
 - Every protected Newsroom layout, page and Server Action calls `requireStaff()`. `src/proxy.ts` is only an optimistic check.

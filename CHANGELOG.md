@@ -1,5 +1,13 @@
 # Riwayat versi
 
+## v0.1.1 · 13 November 2026 · Satu proyek Supabase
+
+- Permintaan pemilik: cukup **satu** proyek Supabase (`presscompass`) untuk produksi, deploy Preview Vercel, dan komputer Anda.
+- Pengaman lingkungan diganti pengaman proyek: aplikasi menolak berjalan bila kunci Supabase bukan milik proyek PressCompass (misalnya kunci point.lat) atau migrasi belum diterapkan.
+- Migrasi baru `20261113000200_single_project.sql` (hanya mengganti penanda di `app_meta`).
+- Dashboard menulis "Deployment: Production" atau "Preview or local".
+- Panduan pemasangan disederhanakan untuk satu proyek.
+
 ## v0.1.0 · 13 November 2026 · Fondasi (Rencana 1)
 
 - Proyek Next.js 16.4.6 dengan npm dan Node 26, tanpa Docker.

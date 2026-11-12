@@ -31,7 +31,6 @@ beforeAll(async () => {
   for (const id of [publishedId, draftId]) await q.query(`insert into public.article_authors (article_id, author_id) values ($1, $2)`, [id, authorId]);
   await q.query(`insert into public.pages (title, slug, status, published_at) values ('About', 'about', 'published', now()), ('Privacy', 'privacy', 'draft', null)`);
   await q.query(`update public.layouts set draft = '{"title":"draft"}', published = '{"title":"live"}' where key = 'home'`);
-  await q.query(`insert into public.app_meta (key, value) values ('environment', '"preview"')`);
   await q.query(`insert into public.article_revisions (article_id, snapshot) values ($1, '{}')`, [draftId]);
 });
 
@@ -121,10 +120,17 @@ describe('staff (Newsroom session)', () => {
 describe('service_role (secret key)', () => {
   it('reads and writes system tables', async () => {
     await db.as('service_role', null, async (q) => {
-      const rows = await q<{ value: unknown }>(`select value from public.app_meta where key = 'environment'`);
-      expect(rows[0].value).toBe('preview');
+      const rows = await q<{ value: unknown }>(`select value from public.app_meta where key = 'project'`);
+      expect(rows[0].value).toBe('presscompass');
       await q(`insert into public.staff (user_id) values ($1)`, [STRANGER]);
     });
+  });
+});
+
+describe('project marker', () => {
+  it('is written by the migrations and is the only app_meta row', async () => {
+    const rows = (await db.client.query(`select key, value from public.app_meta order by key`)).rows;
+    expect(rows).toEqual([{ key: 'project', value: 'presscompass' }]);
   });
 });
 

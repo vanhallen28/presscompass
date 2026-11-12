@@ -1,31 +1,27 @@
-import type { DeployEnv } from '@/lib/env';
+// PressCompass runs on one Supabase project (production, Vercel Preview and the owner's computer share it).
+// The migrations write `app_meta.project = "presscompass"`; a deployment whose keys point at any other
+// Supabase project (or one without the migrations) refuses to start.
 
-export type MarkerDecision = 'claim' | 'ok';
+export const PROJECT_MARKER = 'presscompass';
 
-/**
- * Each Supabase project is marked with the environment that first used it (`app_meta.environment`).
- * A Preview deployment pointed at the production project (or the reverse) must refuse to start.
- */
-export function checkEnvironmentMarker(stored: string | null, current: DeployEnv): MarkerDecision {
-  if (stored === null) return 'claim';
-  if (stored === current) return 'ok';
-  throw new Error(
-    `This ${current} deployment is connected to the ${stored} Supabase project. ` +
-      `Check NEXT_PUBLIC_SUPABASE_URL and the Supabase keys in the Vercel ${current === 'production' ? 'Production' : 'Preview'} environment.`,
-  );
+export function checkProjectMarker(stored: unknown): void {
+  if (stored === PROJECT_MARKER) return;
+  if (stored === null || stored === undefined) {
+    throw new Error(
+      'This Supabase project has no PressCompass marker. Check that NEXT_PUBLIC_SUPABASE_URL and the keys belong to ' +
+        'the presscompass project, and that the migrations have been applied (npm run db:push).',
+    );
+  }
+  throw new Error(`These Supabase keys belong to "${String(stored)}", not PressCompass. Check the Supabase keys in the environment.`);
 }
 
 /** Called from instrumentation.ts when a server instance starts on Vercel. */
-export async function assertEnvironment(): Promise<void> {
-  const { deployEnv } = await import('@/lib/env');
+export async function assertProject(): Promise<void> {
   const { createAdminClient } = await import('@/lib/supabase/clients');
-  const current = deployEnv();
   const supabase = createAdminClient();
-  const { data, error } = await supabase.from('app_meta').select('value').eq('key', 'environment').maybeSingle();
-  if (error) throw new Error(`Could not read app_meta from Supabase: ${error.message}. Have the migrations been applied?`);
-  const stored = typeof data?.value === 'string' ? data.value : null;
-  if (checkEnvironmentMarker(stored, current) === 'claim') {
-    const { error: insertError } = await supabase.from('app_meta').insert({ key: 'environment', value: current });
-    if (insertError && insertError.code !== '23505') throw new Error(`Could not mark the Supabase project: ${insertError.message}`);
+  const { data, error } = await supabase.from('app_meta').select('value').eq('key', 'project').maybeSingle();
+  if (error) {
+    throw new Error(`Could not read app_meta from Supabase: ${error.message}. Are these PressCompass keys, and have the migrations been applied?`);
   }
+  checkProjectMarker(data?.value ?? null);
 }

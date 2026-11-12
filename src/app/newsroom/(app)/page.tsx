@@ -50,7 +50,7 @@ export default async function DashboardPage() {
             <li>
               <Icon name="check" size={16} className={styles.ok} />
               <span>
-                <b>Environment</b> {environment === 'production' ? 'Production' : 'Preview'}
+                <b>Deployment</b> {environment === 'production' ? 'Production' : 'Preview or local'}
               </span>
             </li>
             <li>

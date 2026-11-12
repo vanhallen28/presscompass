@@ -1,7 +1,7 @@
 # PressCompass · Design Spec (website + Newsroom CMS)
 
 **Tanggal:** 2026-11-13
-**Status:** menunggu review pemilik. Desain visual **dikunci** pemilik 13 November 2026.
+**Status:** disetujui pemilik 13 November 2026, dibangun mulai v0.1.0. Revisi v0.1.1: satu proyek Supabase.
 **Pemilik:** pemilik PressCompass (pengguna CMS tunggal)
 **Desain:** design system https://claude.ai/artifact/D3Mgp73bxchiin6SNrCxS3 dan preview `presscompass-preview.html` (Front page, Article, Newsroom CMS)
 **Catatan brand:** PROJECT WEB `claude/presscompass-brand-design-spec.md`
@@ -38,6 +38,7 @@ Aplikasi tersambung ke Supabase hanya lewat kredensial bawaan proyek Supabase: P
 | Docker | Tidak dipakai di mana pun (pemilik, 13 Nov) |
 | Indexing | Sitemap + Search Console API + IndexNow + URL Inspection. Google Indexing API opsional, mati bawaan (resmi hanya untuk JobPosting dan BroadcastEvent) |
 | Jadwal | Supabase Cron setiap 5 menit memanggil endpoint aplikasi; cron Vercel harian sebagai cadangan |
+| Proyek Supabase | **Satu** proyek `presscompass` untuk produksi, Preview Vercel, dan komputer pemilik (pemilik, 13 Nov, v0.1.1) |
 | Media | **Cloudinary** untuk semua gambar (pemilik, 13 Nov): unggah langsung dari browser, ukuran dan format otomatis `f_auto,q_auto` dari CDN Cloudinary. Supabase Storage tidak dipakai |
 
 ## 3. Brand dan bahasa
@@ -108,11 +109,12 @@ Pembaca tidak pernah menulis langsung ke Supabase. Form newsletter, kontak, dan 
 
 | Tempat | Supabase |
 |---|---|
-| Produksi (`presscompass.site`) | proyek `presscompass` (Free, Singapura), env Vercel Production |
-| Komputer pemilik (`npm run dev`) dan deploy Preview Vercel | proyek kedua `presscompass-preview` (Free, Singapura) |
-| Tes otomatis | Postgres bawaan runner CI dan adapter memori; tidak pernah Supabase produksi |
+| Produksi (`presscompass.site`), deploy Preview Vercel, dan komputer pemilik (`npm run dev`) | satu proyek `presscompass` (Free, Singapura), env yang sama di semua lingkungan Vercel dan di `.env` |
+| Tes otomatis | Postgres bawaan runner CI dan Supabase tiruan; tidak pernah Supabase sungguhan |
 
-Aplikasi menolak berjalan bila env Preview menunjuk ke proyek produksi, atau sebaliknya. Penanda lingkungan disimpan di tabel `app_meta`.
+- Keputusan pemilik 13 November 2026 (v0.1.1): satu proyek saja. Draf tetap tersembunyi dari pembaca karena RLS, dan jatah 2 proyek gratis Supabase tidak terpakai habis.
+- Akibatnya `npm run dev` dan deploy Preview membaca dan menulis data produksi. Karena itu adapter layanan luar (Google, IndexNow) wajib `fake` di luar Vercel Production, dan migrasi selalu lulus CI dulu sebelum `npm run db:push`.
+- Aplikasi menolak berjalan bila `app_meta.project` bukan `presscompass`: kunci proyek lain (misalnya point.lat) atau migrasi yang belum diterapkan.
 
 ### Skema database (migrasi)
 
@@ -401,9 +403,8 @@ Setiap rencana ditulis tepat sebelum dikerjakan (skill writing-plans), dieksekus
 
 1. **GitHub:** repo privat baru `presscompass` (pemilik yang membuat dan mendorong).
 2. **Vercel Hobby:** proyek dari repo itu, region fungsi `sin1`, domain `presscompass.site`.
-3. **Supabase:** dua proyek Free di Singapura, `presscompass` dan `presscompass-preview`.
-   - Jatah gratis 2 proyek per akun berlaku di semua organisasi tempat Anda Owner atau Admin. Bila akun yang sama masih memegang proyek gratis point.lat yang aktif, buat PressCompass di akun Supabase lain atau jeda proyek yang tidak dipakai.
-   - Dari setiap proyek: Project URL, publishable key, secret key (Settings, API Keys). Isi ke env Vercel dan `.env` lokal, tidak pernah ke percakapan atau repo.
+3. **Supabase:** satu proyek Free `presscompass` di Singapura.
+   - Project URL, publishable key, secret key (Settings, API Keys). Isi ke env Vercel (semua lingkungan) dan `.env` lokal, tidak pernah ke percakapan atau repo.
    - Authentication: matikan pendaftaran, buat satu pengguna (email Anda).
 4. **Cloudinary Free:** cloud name, API key, API secret (Settings, API Keys). Bisa memakai akun Cloudinary point.lat dengan folder terpisah, atau akun baru supaya kuota tidak terbagi.
 5. **Google:**
@@ -422,6 +423,7 @@ Setiap rencana ditulis tepat sebelum dikerjakan (skill writing-plans), dieksekus
 | Kuota Hobby (1 juta pemanggilan fungsi, 4 jam CPU aktif, 100 GB transfer per bulan); fitur yang melewati kuota bisa diblokir sampai 30 hari | halaman di-cache CDN, gambar di-cache setahun, pemantauan Usage di runbook |
 | Supabase Free: database 500 MB, egress 5 GB, proyek dijeda setelah 7 hari sepi | halaman di-cache CDN Vercel, Supabase Cron menjaga aktivitas, indikator ukuran database di Dashboard |
 | Cloudinary Free: 25 kredit per bulan, 1 kredit = 1.000 transformasi atau 1 GB penyimpanan atau 1 GB bandwidth gambar; berkas gambar maksimal 10 MB | transformasi masuk 2560 px, preset `srcset` terbatas, pemakaian kredit dipantau di dashboard Cloudinary (runbook) |
+| Satu proyek untuk produksi, Preview, dan komputer: salah edit atau migrasi rusak langsung mengenai situs live | draf tersembunyi oleh RLS; migrasi hanya menambah dan lulus CI di PostgreSQL dulu; adapter Google dan IndexNow `fake` di luar Production; cadangan mingguan (Rencana 8) |
 | Supabase Free tanpa backup otomatis | ekspor mingguan lewat API (secret key), dienkripsi, disimpan di GitHub (Rencana 8) |
 | Indexing tidak bisa dipaksa | sitemap bersih, Search Console + IndexNow langsung saat terbit, konten berkualitas, status dipantau |
 | CMS kustom lebih banyak dibangun daripada Payload | modul kecil dengan antarmuka jelas, rencana bertahap, tes di setiap rencana |
