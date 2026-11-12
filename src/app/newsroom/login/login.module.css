@@ -1,0 +1,89 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5) var(--space-4);
+  background: var(--paper-sunken);
+}
+
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-top: var(--rule-heavy) solid var(--ink);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-5);
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--ink);
+}
+
+.label {
+  font: 500 12px/16px var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.title {
+  margin: var(--space-6) 0 var(--space-5);
+  font: 500 30px/36px var(--font-serif);
+  font-variation-settings: 'opsz' 48;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font: 500 14px/20px var(--font-sans);
+}
+
+.input {
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper-raised);
+  font: 400 15px/22px var(--font-sans);
+}
+
+.input:hover {
+  border-color: var(--ink-secondary);
+}
+
+.input:focus-visible {
+  border-color: var(--meridian);
+}
+
+.alertSlot:empty {
+  display: none;
+}
+
+.error {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font: 400 14px/20px var(--font-sans);
+}
+
+.error svg {
+  flex: none;
+  margin-top: 2px;
+}
