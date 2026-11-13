@@ -33,8 +33,10 @@ export default defineConfig({
     launchOptions: process.env.PW_CHROME_PATH ? { executablePath: process.env.PW_CHROME_PATH } : {},
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'desktop', testIgnore: /ads\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } } },
+    { name: 'mobile', testIgnore: /ads\.spec\.ts/, use: { ...devices['Pixel 7'] } },
+    // Turning ads on changes every site page (banner, slots), so those tests run last, after the others.
+    { name: 'ads', testMatch: /ads\.spec\.ts/, dependencies: ['desktop', 'mobile'], use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } } },
   ],
   webServer: [
     {
