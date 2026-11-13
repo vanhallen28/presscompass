@@ -58,9 +58,10 @@ describe('starter content format', () => {
 });
 
 describe('starter articles', () => {
-  it('has ten articles with unique slugs', () => {
-    expect(articles).toHaveLength(10);
-    expect(new Set(articles.map((article) => article.slug)).size).toBe(10);
+  it('has eighteen articles with unique slugs, three in each section', () => {
+    expect(articles).toHaveLength(18);
+    expect(new Set(articles.map((article) => article.slug)).size).toBe(18);
+    for (const section of SECTIONS) expect(articles.filter((article) => article.section === section.slug), section.slug).toHaveLength(3);
   });
 
   it.each(articles.map((article) => [article.file, article] as const))('%s survives the sanitizer unchanged', (_file, article) => {
