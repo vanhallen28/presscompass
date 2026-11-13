@@ -23,6 +23,7 @@ const META: Record<SpecialKind, { label: string; icon: IconName }> = {
   youtube: { label: 'YouTube video', icon: 'video' },
   readMore: { label: 'Read more', icon: 'link' },
   image: { label: 'Image', icon: 'image' },
+  chart: { label: 'Chart', icon: 'trend' },
 };
 
 function summary(kind: SpecialKind, attrs: Record<string, unknown>) {
@@ -39,6 +40,8 @@ function summary(kind: SpecialKind, attrs: Record<string, unknown>) {
       return String(attrs.title || 'Untitled');
     case 'image':
       return String(attrs.caption || '');
+    case 'chart':
+      return `${attrs.title} · ${attrs.kind === 'line' ? 'line' : 'bar'} chart, ${(attrs.labels as string[]).length} rows`;
   }
 }
 

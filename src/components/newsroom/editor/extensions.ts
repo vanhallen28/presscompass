@@ -17,6 +17,7 @@ export const SPECIAL_DEFAULTS = {
   youtube: { videoId: '', title: '' },
   readMore: { articleId: '', title: '' },
   image: { mediaId: '', caption: '' },
+  chart: { kind: 'bar', title: '', subtitle: '', source: '', axis: '', labels: [], series: [] },
 } as const;
 
 export type SpecialKind = keyof typeof SPECIAL_DEFAULTS;

@@ -37,6 +37,9 @@ function collect(blocks: (Block | ListItem)[], lines: string[]): void {
       case 'image':
         lines.push(block.attrs.caption);
         break;
+      case 'chart':
+        lines.push(block.attrs.title, block.attrs.subtitle);
+        break;
       default:
         break;
     }

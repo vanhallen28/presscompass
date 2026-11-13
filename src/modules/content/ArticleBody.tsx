@@ -2,10 +2,11 @@ import type { ReactNode } from 'react';
 import { CloudImage } from '@/components/media/CloudImage';
 import type { Block, Doc, Inline, ListItem, Mark, TableRow } from '@/lib/doc/schema';
 import styles from './article.module.css';
+import { ChartFigure } from './ChartFigure';
 import { YouTubeEmbed } from './YouTubeEmbed';
 
-// Renders a sanitized editor document as React elements (no raw HTML). Used by the Newsroom preview
-// now and by the public article page later. Read more cards resolve through `links`; a card whose
+// Renders a sanitized editor document as React elements (no raw HTML). Used by the public article page
+// and the Newsroom preview. Read more cards resolve through `links`; a card whose
 // article no longer exists is left out.
 
 export type ArticleLinks = Map<string, { title: string; href: string }>;
@@ -149,6 +150,8 @@ function blocks(content: (Block | ListItem)[], links: ArticleLinks | undefined, 
           </figure>
         );
       }
+      case 'chart':
+        return <ChartFigure key={index} chart={block.attrs} />;
       case 'readMore': {
         const link = links?.get(block.attrs.articleId);
         if (!link) return null;

@@ -27,6 +27,58 @@ describe('ArticleBody', () => {
     expect(html).not.toContain('Gone');
   });
 
+  it('draws bar charts as SVG with a data table for screen readers', () => {
+    const html = renderToStaticMarkup(
+      <ArticleBody
+        doc={doc([
+          {
+            type: 'chart',
+            attrs: { kind: 'bar', title: 'Annual food inflation', subtitle: 'Per cent', source: 'BPS', axis: 'Month', labels: ['May', 'Jun', 'Jul'], series: [{ name: 'Inflation', values: [4.1, -0.5, 2.1] }] },
+          },
+        ])}
+      />,
+    );
+    expect(html.match(/<rect /g)).toHaveLength(3);
+    // The last bar is highlighted, like the locked preview; negative values get a true minus sign.
+    expect(html).toContain('class="bar two"');
+    expect(html).toContain('>\u22120.5</text>');
+    expect(html).toContain('<svg viewBox="0 0 640 260" aria-hidden="true" focusable="false">');
+    expect(html).toContain('<caption>Annual food inflation. Per cent</caption>');
+    expect(html).toContain('<th scope="col">Month</th><th scope="col">Inflation</th>');
+    expect(html).toContain('<tr><th scope="row">Jun</th><td>\u22120.5</td></tr>');
+    expect(html).toContain('<figcaption class="source">Source: BPS</figcaption>');
+  });
+
+  it('draws line charts with end labels and gaps for missing values', () => {
+    const html = renderToStaticMarkup(
+      <ArticleBody
+        doc={doc([
+          {
+            type: 'chart',
+            attrs: {
+              kind: 'line',
+              title: 'Prices',
+              subtitle: '',
+              source: '',
+              axis: '',
+              labels: ['W1', 'W2', 'W3', 'W4'],
+              series: [
+                { name: 'Retail', values: [100, 99, 99, 99] },
+                { name: 'Farm', values: [100, null, 92, 88] },
+              ],
+            },
+          },
+        ])}
+      />,
+    );
+    expect(html.match(/<polyline /g)).toHaveLength(2);
+    expect(html.match(/<circle /g)).toHaveLength(1);
+    expect(html).toContain('>Retail 99</text>');
+    expect(html).toContain('>Farm 88</text>');
+    expect(html).toContain('<td>No data</td>');
+    expect(html).not.toContain('Source:');
+  });
+
   it('renders text blocks with their marks', () => {
     const html = renderToStaticMarkup(
       <ArticleBody

@@ -287,3 +287,114 @@
 .credit {
   color: var(--ink-muted);
 }
+
+/* Chart block (locked preview: .chart, .c-grid, .c-bar, .c-l1). */
+.chart {
+  margin: 32px 0;
+  padding: var(--space-5);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+}
+
+.chartTitle {
+  font: 600 15px/22px var(--font-sans);
+  color: var(--ink);
+}
+
+.chartSub {
+  margin: 2px 0 16px;
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ink-secondary);
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart .source {
+  margin-top: 14px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  font: 500 13px/18px var(--font-sans);
+  color: var(--ink-secondary);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  background: currentColor;
+}
+
+.grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.base {
+  stroke: var(--ink-muted);
+  stroke-width: 1;
+}
+
+.axis {
+  font: 400 12px var(--font-mono);
+  fill: var(--ink-muted);
+}
+
+.value {
+  font: 500 13px var(--font-mono);
+  fill: var(--ink);
+}
+
+.endLabel {
+  font: 500 13px var(--font-sans);
+}
+
+.one {
+  color: var(--data-1);
+  fill: var(--data-1);
+  stroke: var(--data-1);
+}
+
+.two {
+  color: var(--data-2);
+  fill: var(--data-2);
+  stroke: var(--data-2);
+}
+
+.three {
+  color: var(--data-3);
+  fill: var(--data-3);
+  stroke: var(--data-3);
+}
+
+.bar {
+  stroke: none;
+}
+
+.line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.endLabel,
+.dot {
+  stroke: none;
+}

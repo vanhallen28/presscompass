@@ -13,6 +13,7 @@ import {
   UUID,
   YOUTUBE_ID,
 } from './schema';
+import { cleanChart } from './chart';
 
 // Rebuilds an editor document from scratch, keeping only the nodes, marks and attributes in
 // schema.ts. Blocks that are not allowed where they appear become paragraphs, so text is not lost;
@@ -24,7 +25,7 @@ type Context = 'doc' | 'quote' | 'item' | 'cell';
 const TEXT_MAX = 20_000;
 const SAFE_HREF = /^(https?:\/\/|mailto:|\/(?!\/)|#)/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const SPECIAL = new Set(['pullQuote', 'editorNote', 'keyFigures', 'youtube', 'readMore', 'image']);
+const SPECIAL = new Set(['pullQuote', 'editorNote', 'keyFigures', 'youtube', 'readMore', 'image', 'chart']);
 
 const isObject = (value: unknown): value is Raw => typeof value === 'object' && value !== null && !Array.isArray(value);
 const kids = (node: Raw): Raw[] => (Array.isArray(node.content) ? node.content.filter(isObject) : []);
@@ -140,6 +141,10 @@ function cleanSpecial(node: Raw): Block | null {
       return typeof a.mediaId === 'string' && UUID.test(a.mediaId)
         ? { type: 'image', attrs: { mediaId: a.mediaId.toLowerCase(), caption: text(a.caption, LIMITS.imageCaption) } }
         : null;
+    case 'chart': {
+      const chart = cleanChart(a);
+      return chart ? { type: 'chart', attrs: chart } : null;
+    }
     default:
       return null;
   }

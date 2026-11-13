@@ -3,6 +3,7 @@
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ds/Button';
+import { CHART_LIMITS, type ChartAttrs, chartTable, parseChartTable } from '@/lib/doc/chart';
 import { LIMITS } from '@/lib/doc/schema';
 import { youtubeId } from '@/lib/doc/youtube';
 import { toWibInput } from '@/lib/time';
@@ -27,6 +28,7 @@ const TITLES: Record<DialogKind, string> = {
   youtube: 'YouTube video',
   readMore: 'Read more',
   image: 'Image',
+  chart: 'Chart',
   link: 'Link',
 };
 
@@ -58,6 +60,7 @@ export function BlockDialog({
     ...(kind === 'editorNote' && !initial.date ? { date: toWibInput(new Date()).slice(0, 10) } : {}),
     ...(kind === 'keyFigures' ? { items: padFigures(initial.items) } : {}),
     ...(kind === 'youtube' ? { link: initial.videoId ?? '' } : {}),
+    ...(kind === 'chart' ? { data: chartTable(initial as ChartAttrs), kind: initial.kind === 'line' ? 'line' : 'bar' } : {}),
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [query, setQuery] = useState('');
@@ -99,6 +102,13 @@ export function BlockDialog({
     } else if (kind === 'readMore') {
       if (!values.articleId) problems.article = 'Choose an article.';
       attrs = { articleId: values.articleId, title: values.title };
+    } else if (kind === 'chart') {
+      const chartKind = values.kind === 'line' ? 'line' : 'bar';
+      const parsed = parseChartTable(text('data'), chartKind);
+      if ('error' in parsed) problems.data = parsed.error;
+      if (!text('title').trim()) problems.title = 'Give the chart a title that says what it shows.';
+      if (!text('source').trim()) problems.source = 'Name the source of the numbers.';
+      attrs = { kind: chartKind, title: text('title').trim(), subtitle: text('subtitle').trim(), source: text('source').trim(), ...('error' in parsed ? {} : parsed) };
     } else if (kind === 'link') {
       const href = text('href').trim();
       if (!SAFE_HREF.test(href)) problems.href = 'Use a full address starting with https://, or a site address starting with /.';
@@ -246,6 +256,29 @@ export function BlockDialog({
                 ))}
               </ul>
             )}
+          </>
+        )}
+
+        {kind === 'chart' && (
+          <>
+            <SelectField id={`${uid}-chart-kind`} label="Type" value={text('kind')} onChange={(e) => set('kind', e.target.value)}>
+              <option value="bar">Bar chart (one or two columns of numbers)</option>
+              <option value="line">Line chart (one to three columns of numbers)</option>
+            </SelectField>
+            <TextField id={`${uid}-title`} label="Title" value={text('title')} onChange={(e) => set('title', e.target.value)} error={errors.title} placeholder="Annual food inflation" maxLength={CHART_LIMITS.title} />
+            <TextField id={`${uid}-subtitle`} label="Units and period" optional value={text('subtitle')} onChange={(e) => set('subtitle', e.target.value)} placeholder="Per cent, May–October 2026" maxLength={CHART_LIMITS.subtitle} />
+            <TextArea
+              id={`${uid}-data`}
+              label="Data"
+              rows={8}
+              value={text('data')}
+              onChange={(e) => set('data', e.target.value)}
+              error={errors.data}
+              mono
+              placeholder={'Month\tFood inflation\nMay\t4.1\nJun\t3.8'}
+              hint="Copy the cells from a spreadsheet and paste them here. First row: column names. First column: labels. Up to 24 rows."
+            />
+            <TextField id={`${uid}-source`} label="Source" value={text('source')} onChange={(e) => set('source', e.target.value)} error={errors.source} placeholder="Statistics Indonesia (BPS)" maxLength={CHART_LIMITS.source} />
           </>
         )}
 

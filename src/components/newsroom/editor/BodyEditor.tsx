@@ -126,6 +126,7 @@ export function BodyEditor({
       { label: 'Image', icon: 'image', run: () => setPicking(true) },
       { label: 'Pull quote', text: 'Pull quote', run: () => insert('pullQuote') },
       { label: 'Key figures', text: 'Figures', run: () => insert('keyFigures') },
+      { label: 'Chart', icon: 'trend', run: () => insert('chart') },
       { label: "Editor's note", text: 'Note', run: () => insert('editorNote') },
       { label: 'YouTube video', icon: 'video', run: () => insert('youtube') },
       { label: 'Read more card', text: 'Read more', run: () => insert('readMore') },

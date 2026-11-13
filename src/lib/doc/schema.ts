@@ -1,3 +1,5 @@
+import type { ChartAttrs } from './chart';
+
 // The article body is stored as the editor's JSON document (Tiptap/ProseMirror) restricted to these nodes.
 // src/lib/doc/sanitize.ts enforces this shape on every save; the site renders it with ArticleBody.
 
@@ -26,6 +28,8 @@ export type YouTube = { type: 'youtube'; attrs: { videoId: string; title: string
 export type ReadMore = { type: 'readMore'; attrs: { articleId: string; title: string } };
 /** An image from the media library. Alt text and credit come from the media item; the caption is per use. */
 export type ImageBlock = { type: 'image'; attrs: { mediaId: string; caption: string } };
+/** A bar or line chart drawn by the site (src/lib/doc/chart.ts). */
+export type ChartBlock = { type: 'chart'; attrs: ChartAttrs };
 
 export type Block =
   | Paragraph
@@ -40,7 +44,8 @@ export type Block =
   | KeyFigures
   | YouTube
   | ReadMore
-  | ImageBlock;
+  | ImageBlock
+  | ChartBlock;
 
 export type Doc = { type: 'doc'; content: Block[] };
 
