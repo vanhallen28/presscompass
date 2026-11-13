@@ -1,6 +1,7 @@
 // Loads the starter content pack (content/starter) into the Supabase project: ten sourced explainers with
-// their illustrations, which are uploaded to Cloudinary. Safe to run again: anything already there (same
-// article slug, image public ID, section, tag or author slug) is left as it is.
+// their illustrations, which are uploaded to Cloudinary, and draft About, Contact and Privacy policy pages.
+// Safe to run again: anything already there (same article or page slug, image public ID, section, tag or
+// author slug) is left as it is.
 //
 // Usage: npm run content:starter            publish the articles, spread over the last 30 hours
 //        npm run content:starter -- --draft  add them as drafts to review in the Newsroom first
@@ -11,7 +12,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
-import { AUTHOR, IMAGE_CREDIT, SECTIONS, bodyText, imagePublicId, parseArticle, readingMinutes, slugify, wordCount } from './starter/parse.mjs';
+import { AUTHOR, IMAGE_CREDIT, SECTIONS, bodyText, imagePublicId, parseArticle, parsePage, readingMinutes, slugify, wordCount } from './starter/parse.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'content', 'starter');
 const args = new Set(process.argv.slice(2));
@@ -34,6 +35,13 @@ try {
 } catch (error) {
   fail(error.message);
 }
+const pageFiles = existsSync(join(ROOT, 'pages')) ? readdirSync(join(ROOT, 'pages')).filter((name) => name.endsWith('.md')).sort() : [];
+let pages;
+try {
+  pages = pageFiles.map((file) => parsePage(readFileSync(join(ROOT, 'pages', file), 'utf8'), file));
+} catch (error) {
+  fail(error.message);
+}
 const slugs = articles.map((article) => article.slug);
 if (new Set(slugs).size !== slugs.length) fail('Two starter articles share a slug.');
 for (const article of articles) {
@@ -46,7 +54,8 @@ if (dryRun) {
     const words = wordCount(bodyText(article.body));
     console.log(`${article.slug}  (${article.section}, ${article.type}, ${words} words, image ${article.image})`);
   }
-  console.log(`\n${articles.length} articles are ready to import.\n`);
+  for (const page of pages) console.log(`page /${page.slug}  (draft, ${wordCount(bodyText(page.body))} words)`);
+  console.log(`\n${articles.length} articles and ${pages.length} pages are ready to import.\n`);
   process.exit(0);
 }
 
@@ -202,6 +211,17 @@ async function main() {
     const related = article.related.map((slug, index) => ({ article_id: id, related_id: articleId.get(slug), position: index }));
     if (related.length) await run('add related articles', supabase.from('article_related').insert(related));
     await run('save the first revision', supabase.rpc('record_revision', { p_id: id, p_note: 'Imported from the starter content pack.' }));
+  }
+
+  // Static pages as drafts: their contact details and legal text are the owner's to complete before publishing.
+  const pageRows = pages.length ? await run('read pages', supabase.from('pages').select('slug').in('slug', pages.map((page) => page.slug))) : [];
+  const newPages = pages.filter((page) => !pageRows.some((row) => row.slug === page.slug));
+  if (newPages.length) {
+    await run(
+      'add pages',
+      supabase.from('pages').insert(newPages.map((page) => ({ title: page.title, slug: page.slug, seo: { description: page.description }, blocks: [{ type: 'text', body: page.body }], status: 'draft' }))),
+    );
+    console.log(`Added draft pages: ${newPages.map((page) => page.title).join(', ')}. Complete them under Pages in the Newsroom, then publish.`);
   }
 
   console.log(

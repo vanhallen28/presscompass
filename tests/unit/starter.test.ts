@@ -5,11 +5,15 @@ import { sanitizeDoc } from '@/lib/doc/sanitize';
 import { docText, readingMinutes as appReadingMinutes, wordCount as appWordCount } from '@/lib/doc/text';
 import type { Doc } from '@/lib/doc/schema';
 import { slugify as appSlugify } from '@/lib/slug';
-import { bodyText, inline, markdownToDoc, parseArticle, readingMinutes, SECTIONS, slugify, splitFrontMatter, wordCount } from '../../scripts/starter/parse.mjs';
+import { bodyText, inline, markdownToDoc, parseArticle, parsePage, readingMinutes, SECTIONS, slugify, splitFrontMatter, wordCount } from '../../scripts/starter/parse.mjs';
 
 const ROOT = join(process.cwd(), 'content', 'starter');
 const files = readdirSync(join(ROOT, 'articles')).filter((name) => name.endsWith('.md')).sort();
 const articles = files.map((file) => parseArticle(readFileSync(join(ROOT, 'articles', file), 'utf8'), file));
+const pages = readdirSync(join(ROOT, 'pages'))
+  .filter((name) => name.endsWith('.md'))
+  .sort()
+  .map((file) => parsePage(readFileSync(join(ROOT, 'pages', file), 'utf8'), file));
 
 describe('starter content format', () => {
   it('reads front matter, quoted values and sources', () => {
@@ -80,5 +84,12 @@ describe('starter articles', () => {
       expect(article.sources.length, article.file).toBeGreaterThan(0);
     }
     expect(new Set(articles.map((article) => article.section)).size).toBe(SECTIONS.length);
+  });
+});
+
+describe('starter pages', () => {
+  it('has About, Contact and Privacy policy drafts that survive the sanitizer', () => {
+    expect(pages.map((page) => page.slug)).toEqual(['about', 'contact', 'privacy-policy']);
+    for (const page of pages) expect(sanitizeDoc(page.body), page.file).toEqual(page.body);
   });
 });

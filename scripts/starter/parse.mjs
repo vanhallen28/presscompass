@@ -244,3 +244,24 @@ export function parseArticle(text, file) {
     body: doc,
   };
 }
+
+/**
+ * One starter page (About, Contact, Privacy policy): title, slug, description and body. Imported as a draft.
+ * @returns {{ file: string, title: string, slug: string, description: string, body: { type: 'doc', content: any[] } }}
+ */
+export function parsePage(text, file) {
+  const { meta, body } = splitFrontMatter(text);
+  const problems = [];
+  for (const key of ['title', 'slug']) if (!meta[key]) problems.push(`${key} is missing`);
+  if (meta.slug && !SLUG.test(meta.slug)) problems.push('slug must use lowercase letters, numbers and single hyphens');
+  if ((meta.title ?? '').length > 120) problems.push('title is longer than 120 characters');
+  if ((meta.description ?? '').length > 300) problems.push('description is longer than 300 characters');
+  let doc = null;
+  try {
+    doc = markdownToDoc(body);
+  } catch (error) {
+    problems.push(error.message);
+  }
+  if (problems.length) throw new Error(`${file}: ${problems.join('; ')}.`);
+  return { file, title: meta.title, slug: meta.slug, description: meta.description ?? '', body: doc };
+}

@@ -67,7 +67,7 @@ export default async function MediaItemPage({ params, searchParams }: { params: 
               <ul className={styles.uses}>
                 {uses.map((use) => (
                   <li key={`${use.kind}-${use.id}`}>
-                    <Link href={use.kind === 'article' ? `/newsroom/articles/${use.id}` : `/newsroom/authors/${use.id}`}>{use.title || 'Untitled'}</Link>
+                    <Link href={`/newsroom/${use.kind === 'article' ? 'articles' : use.kind === 'page' ? 'pages' : 'authors'}/${use.id}`}>{use.title || 'Untitled'}</Link>
                     <br />
                     <small>
                       {ROLE[use.role]}

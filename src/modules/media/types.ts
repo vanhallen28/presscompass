@@ -55,4 +55,4 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export type MediaUse = { kind: 'article' | 'author'; id: string; title: string; status: string | null; role: 'lead' | 'body' | 'photo' };
+export type MediaUse = { kind: 'article' | 'page' | 'author'; id: string; title: string; status: string | null; role: 'lead' | 'body' | 'photo' };

@@ -43,3 +43,18 @@ export type SearchPage = { total: number; rows: Card[] };
 
 export type NavSection = SiteSection & { inNav: boolean };
 export type Redirect = { to: string; code: number };
+
+/** A published static page (site_page). */
+export type SitePageData = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  body: unknown;
+  publishedAt: string;
+  updatedAt: string;
+  media: (SiteImage & { id: string })[];
+  links: { id: string; title: string; slug: string; section: string | null }[];
+};
+
+export type SitePageLink = { title: string; slug: string };

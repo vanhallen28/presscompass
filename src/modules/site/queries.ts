@@ -2,7 +2,7 @@ import 'server-only';
 import { cacheLife, cacheTag } from 'next/cache';
 import { createPublicClient } from '@/lib/supabase/clients';
 import { TAGS } from './cache';
-import type { ArticlePage, Home, ListKind, ListPage, NavSection, Redirect, SearchPage } from './types';
+import type { ArticlePage, Home, ListKind, ListPage, NavSection, Redirect, SearchPage, SitePageData, SitePageLink } from './types';
 
 // Reads for the public site: the publishable key (role anon, Row Level Security) and the site_* SQL
 // functions, cached with Cache Components. Readers see changes from the Newsroom straight away because
@@ -65,6 +65,23 @@ export async function getSections(): Promise<NavSection[]> {
   const { data, error } = await createPublicClient().from('sections').select('name,slug,in_nav').order('position').order('name');
   if (error) throw new Error(`sections: ${error.message}`);
   return (data as { name: string; slug: string; in_nav: boolean }[]).map((s) => ({ name: s.name, slug: s.slug, inNav: s.in_nav }));
+}
+
+/** Published static pages for the footer, by title. Empty before the Plan 5 migration. */
+export async function getPages(): Promise<SitePageLink[]> {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(TAGS.site);
+  const { data, error } = await createPublicClient().rpc('site_pages');
+  return error ? [] : ((data as SitePageLink[] | null) ?? []);
+}
+
+/** One published static page by address, or null. */
+export async function getPage(slug: string): Promise<SitePageData | null> {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(TAGS.site);
+  return rpc<SitePageData | null>('site_page', { p_slug: slug });
 }
 
 /** Where an old address now lives (automatic redirects after an address changed). */
