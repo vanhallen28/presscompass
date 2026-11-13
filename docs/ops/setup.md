@@ -149,15 +149,17 @@ Mematikan: `select cron.unschedule('presscompass-run');`. Rahasia hanya memberi 
 
 ## G. Konten awal (opsional)
 
-Sepuluh artikel penjelas dengan ilustrasinya untuk mengisi situs sebelum artikel sendiri terbit (`content/starter/README.md`).
-Butuh `.env` yang sudah berisi kunci Supabase dan Cloudinary (langkah B dan E).
+Delapan belas artikel penjelas dengan ilustrasinya, plus halaman About, Contact, dan Privacy policy, untuk mengisi situs sebelum artikel sendiri terbit (`content/starter/README.md`). Butuh `.env` yang sudah berisi kunci Supabase dan Cloudinary (langkah B dan E).
 
 ```bash
-npm run content:starter
+npm run check
+npm run content:starter -- --email alamat-kontak@anda
 ```
 
-**Hasil yang diharapkan:** daftar `Published: ...` dan baris `10 of 10 starter articles added.` Lalu push ke GitHub supaya deploy berikutnya memuatnya.
-Untuk memeriksa dulu di Newsroom: `npm run content:starter -- --draft`, lalu terbitkan dari **Articles**.
+`npm run check` harus menulis ✓ untuk Supabase dan Cloudinary. `--email` mengisi alamat kontak di halaman Contact dan Privacy policy lalu menerbitkannya; tanpa `--email` halaman itu masuk sebagai Draft.
+
+**Hasil yang diharapkan:** baris `✓ Cloudinary keys: accepted`, daftar `Published: ...`, lalu `Done. 18 published articles and 3 published pages`. Bila `npm run dev` sedang berjalan, situs lokal langsung diperbarui (atau hentikan dengan Ctrl+C dan jalankan lagi). Lalu push ke GitHub supaya deploy berikutnya memuatnya.
+Untuk memeriksa artikel dulu di Newsroom: tambahkan `--draft`, lalu terbitkan dari **Articles**.
 
 ## H. Iklan: AdSense, Ad Manager, Meta Pixel, jaringan lain
 
@@ -195,5 +197,6 @@ Mematikan: hapus centang sakelar, Save. Slot, banner, dan semua kode hilang dari
 | Ads: "Add the privacy policy link (under Consent) before turning ads on" | isi Privacy policy link (langkah H2), lalu Save lagi |
 | AdSense menulis ads.txt "Not found" atau "Unauthorized" | buka `https://presscompass.site/ads.txt`: barisnya harus memuat `pub-` dengan angka yang sama dengan ID penerbit; simpan Ads lagi bila perlu, tunggu AdSense memeriksa ulang (bisa sampai beberapa hari) |
 | Slot tampil kosong setelah Accept all | unit AdSense baru atau situs belum disetujui (AdSense mengisi setelah disetujui), atau angka `data-ad-slot` salah |
+| Beranda menulis "The first stories are on their way" | belum ada artikel terbit: jalankan `npm run check`, perbaiki yang bertanda ✗, lalu `npm run content:starter` |
 | `npm run dev`: "Supabase did not answer within 8.5 seconds" | koneksi ke Supabase tersendat atau proyek sedang dijeda/dipulihkan (Supabase Free menjeda proyek setelah 7 hari tanpa aktivitas): buka dashboard Supabase, pastikan proyek aktif, lalu muat ulang halaman |
 | Deploy Vercel diblokir: commit author tidak punya akses | perintah pasang selalu memuat `git commit --amend --no-edit --reset-author` sebelum push; jalankan lalu push lagi |
