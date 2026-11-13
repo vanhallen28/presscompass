@@ -26,6 +26,7 @@ const TITLES: Record<DialogKind, string> = {
   keyFigures: 'Key figures',
   youtube: 'YouTube video',
   readMore: 'Read more',
+  image: 'Image',
   link: 'Link',
 };
 

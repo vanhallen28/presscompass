@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { UUID } from '@/lib/doc/schema';
+import { sanitizeDoc } from '@/lib/doc/sanitize';
+import { bodyMediaIds } from '@/lib/doc/text';
 import { requireStaff } from '@/modules/auth/staff';
 import { getArticle, publishDue } from '@/modules/editor/queries';
+import { mediaByIds } from '@/modules/media/queries';
 import { listAuthors, listSections, listTags } from '@/modules/taxonomy/queries';
 import { ArticleEditor } from './ArticleEditor';
 
@@ -23,6 +26,7 @@ export default async function EditArticlePage({ params, searchParams }: { params
   await publishDue();
   const [article, sections, authors, tags] = await Promise.all([getArticle(id), listSections(), listAuthors(), listTags()]);
   if (!article) notFound();
+  const media = await mediaByIds([article.lead_media_id, ...bodyMediaIds(sanitizeDoc(article.body))]);
 
   return (
     <ArticleEditor
@@ -31,6 +35,7 @@ export default async function EditArticlePage({ params, searchParams }: { params
       sections={sections.map(({ id: sid, name, slug }) => ({ id: sid, name, slug }))}
       authors={authors.map(({ id: aid, name, role }) => ({ id: aid, name, role }))}
       tags={tags.map(({ id: tid, name }) => ({ id: tid, name }))}
+      media={[...media.values()]}
       notice={notice ? (NOTICES[notice] ?? null) : null}
     />
   );

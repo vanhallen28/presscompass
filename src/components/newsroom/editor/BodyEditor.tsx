@@ -2,13 +2,15 @@
 
 import { NodeSelection } from '@tiptap/pm/state';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import { type Ref, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { type Ref, useContext, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { Icon, type IconName } from '@/components/ds/Icon';
 import type { Doc } from '@/lib/doc/schema';
+import { ImagePickerDialog } from '@/components/media/ImagePickerDialog';
 import { ArticleIdContext, BlockCard } from './BlockCard';
 import { BlockDialog, type DialogKind } from './BlockDialog';
 import styles from './editor.module.css';
 import { editorExtensions, SPECIAL_DEFAULTS, type SpecialKind } from './extensions';
+import { MediaLookupContext } from './media-context';
 
 export type BodyEditorHandle = { getJSON: () => unknown; getText: () => string; focus: () => void };
 
@@ -34,6 +36,8 @@ export function BodyEditor({
 }) {
   const extensions = useMemo(() => editorExtensions(BlockCard), []);
   const [dialog, setDialog] = useState<{ kind: DialogKind; attrs: Record<string, unknown>; mode: 'insert' | 'edit' } | null>(null);
+  const [picking, setPicking] = useState(false);
+  const lookup = useContext(MediaLookupContext);
 
   const editor = useEditor({
     extensions,
@@ -88,6 +92,13 @@ export function BodyEditor({
 
   const chain = () => editor.chain().focus();
   const insert = (kind: SpecialKind) => setDialog({ kind, attrs: { ...SPECIAL_DEFAULTS[kind] }, mode: 'insert' });
+  // Insert after a selected block instead of replacing it, and leave a paragraph to keep writing in.
+  const insertBlock = (type: string, attrs: Record<string, unknown>) => {
+    const { selection } = editor.state;
+    const content = [{ type, attrs }, { type: 'paragraph' }];
+    if (selection instanceof NodeSelection) chain().insertContentAt(selection.to, content).run();
+    else chain().insertContent(content).run();
+  };
 
   const groups: Tool[][] = [
     [
@@ -112,6 +123,7 @@ export function BodyEditor({
       { label: 'Table', icon: 'table', active: state.table, run: () => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
     ],
     [
+      { label: 'Image', icon: 'image', run: () => setPicking(true) },
       { label: 'Pull quote', text: 'Pull quote', run: () => insert('pullQuote') },
       { label: 'Key figures', text: 'Figures', run: () => insert('keyFigures') },
       { label: "Editor's note", text: 'Note', run: () => insert('editorNote') },
@@ -184,13 +196,23 @@ export function BodyEditor({
               if (editor.state.selection.empty && !state.link) chain().insertContent({ type: 'text', text: href, marks: [{ type: 'link', attrs: { href } }] }).run();
               else chain().extendMarkRange('link').setLink({ href }).run();
             } else {
-              // Insert after a selected block instead of replacing it, and leave a paragraph to keep writing in.
-              const { selection } = editor.state;
-              const content = [{ type: dialog.kind, attrs }, { type: 'paragraph' }];
-              if (selection instanceof NodeSelection) chain().insertContentAt(selection.to, content).run();
-              else chain().insertContent(content).run();
+              insertBlock(dialog.kind, attrs);
             }
             setDialog(null);
+          }}
+        />
+      )}
+      {picking && (
+        <ImagePickerDialog
+          title="Insert an image"
+          initial={null}
+          caption=""
+          submitLabel="Insert"
+          onClose={() => setPicking(false)}
+          onSave={({ media, caption }) => {
+            lookup.remember(media);
+            insertBlock('image', { mediaId: media.id, caption });
+            setPicking(false);
           }}
         />
       )}

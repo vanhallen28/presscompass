@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EMPTY_DOC } from '@/lib/doc/schema';
 import { sanitizeDoc } from '@/lib/doc/sanitize';
-import { docText, readingMinutes, wordCount } from '@/lib/doc/text';
+import { bodyMediaIds, docText, readingMinutes, wordCount } from '@/lib/doc/text';
 
 const p = (text: string, marks?: unknown[]) => ({ type: 'paragraph', content: [{ type: 'text', text, ...(marks ? { marks } : {}) }] });
 
@@ -21,6 +21,7 @@ describe('sanitizeDoc', () => {
         { type: 'keyFigures', attrs: { title: 'Harvest', items: [{ value: '31.5m', label: 'tonnes' }, { value: '−2.4%', label: 'on year' }], source: 'BPS' } },
         { type: 'youtube', attrs: { videoId: 'dQw4w9WgXcQ', title: 'Briefing' } },
         { type: 'readMore', attrs: { articleId: '0b8a6f5e-58a8-4d5c-9b8e-0a5b8a1c2d3e', title: 'Earlier story' } },
+        { type: 'image', attrs: { mediaId: '2c9e7a2b-3d4f-4a5b-8c6d-7e8f9a0b1c2d', caption: 'Farmers in Karawang' } },
         {
           type: 'table',
           content: [
@@ -94,6 +95,7 @@ describe('sanitizeDoc', () => {
         { type: 'pullQuote', attrs: { text: '   ', attribution: 'Nobody' } },
         { type: 'youtube', attrs: { videoId: 'too-short', title: 'x' } },
         { type: 'readMore', attrs: { articleId: 'nope', title: 'x' } },
+        { type: 'image', attrs: { mediaId: 'nope', caption: 'x' } },
         { type: 'keyFigures', attrs: { title: 'x', items: [], source: '' } },
         { type: 'editorNote', attrs: { kind: 'rumour', date: 'yesterday', text: 'Still kept as an update' } },
       ],
@@ -116,6 +118,23 @@ describe('sanitizeDoc', () => {
     const block = clean.content[0] as { attrs: { items: { label: string }[] } };
     expect(block.attrs.items).toHaveLength(4);
     expect(block.attrs.items[0].label).toHaveLength(120);
+  });
+});
+
+describe('bodyMediaIds', () => {
+  it('lists the images in the text once each', () => {
+    const a = '2c9e7a2b-3d4f-4a5b-8c6d-7e8f9a0b1c2d';
+    const b = '3c9e7a2b-3d4f-4a5b-8c6d-7e8f9a0b1c2d';
+    const doc = sanitizeDoc({
+      type: 'doc',
+      content: [
+        { type: 'image', attrs: { mediaId: a, caption: '' } },
+        p('Text'),
+        { type: 'image', attrs: { mediaId: b, caption: '' } },
+        { type: 'image', attrs: { mediaId: a, caption: 'Again' } },
+      ],
+    });
+    expect(bodyMediaIds(doc)).toEqual([a, b]);
   });
 });
 

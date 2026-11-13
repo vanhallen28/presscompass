@@ -24,6 +24,8 @@ export type KeyFigure = { value: string; label: string };
 export type KeyFigures = { type: 'keyFigures'; attrs: { title: string; items: KeyFigure[]; source: string } };
 export type YouTube = { type: 'youtube'; attrs: { videoId: string; title: string } };
 export type ReadMore = { type: 'readMore'; attrs: { articleId: string; title: string } };
+/** An image from the media library. Alt text and credit come from the media item; the caption is per use. */
+export type ImageBlock = { type: 'image'; attrs: { mediaId: string; caption: string } };
 
 export type Block =
   | Paragraph
@@ -37,7 +39,8 @@ export type Block =
   | EditorNote
   | KeyFigures
   | YouTube
-  | ReadMore;
+  | ReadMore
+  | ImageBlock;
 
 export type Doc = { type: 'doc'; content: Block[] };
 
@@ -55,6 +58,7 @@ export const LIMITS = {
   figuresMax: 4,
   videoTitle: 200,
   readMoreTitle: 200,
+  imageCaption: 300,
 } as const;
 
 export const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;

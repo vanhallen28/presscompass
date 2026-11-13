@@ -1,3 +1,4 @@
+import { UUID } from '@/lib/doc/schema';
 import { isSlug, RESERVED_SLUGS, slugify } from '@/lib/slug';
 
 // Checks the Section, Tag and Author forms. Empty addresses are filled in from the name.
@@ -6,7 +7,7 @@ export type Errors = Partial<Record<string, string>>;
 export type SectionValues = { name: string; slug: string; description: string; inNav: boolean };
 export type TagValues = { name: string; slug: string; description: string };
 export type AuthorLink = { label: string; url: string };
-export type AuthorValues = { name: string; slug: string; role: string; bio: string; links: AuthorLink[] };
+export type AuthorValues = { name: string; slug: string; role: string; bio: string; links: AuthorLink[]; photoMediaId: string | null };
 
 export const AUTHOR_LINK_ROWS = 4;
 const HTTP = /^https?:\/\/\S+$/i;
@@ -61,5 +62,6 @@ export function parseAuthor(form: FormData): { values: AuthorValues; errors: Err
     if (!label || !HTTP.test(url)) errors.links = 'Each link needs a label and an address that starts with https:// or http://.';
     links.push({ label, url });
   }
-  return { values: { name, slug, role, bio, links }, errors };
+  const photo = read(form, 'photo_media_id');
+  return { values: { name, slug, role, bio, links, photoMediaId: UUID.test(photo) ? photo.toLowerCase() : null }, errors };
 }

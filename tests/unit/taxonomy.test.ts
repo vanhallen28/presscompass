@@ -59,9 +59,16 @@ describe('parseAuthor', () => {
         role: 'Business correspondent',
         bio: 'Covers trade.',
         links: [{ label: 'X', url: 'https://x.com/rani' }],
+        photoMediaId: null,
       },
       errors: {},
     });
+  });
+
+  it('keeps a chosen photo and ignores anything that is not a media id', () => {
+    const photo = '2c9e7a2b-3d4f-4a5b-8c6d-7e8f9a0b1c2d';
+    expect(parseAuthor(form({ name: 'Rani', slug: '', role: '', bio: '', photo_media_id: photo })).values.photoMediaId).toBe(photo);
+    expect(parseAuthor(form({ name: 'Rani', slug: '', role: '', bio: '', photo_media_id: 'x' })).values.photoMediaId).toBeNull();
   });
 
   it('refuses links that are not web addresses', () => {

@@ -5,7 +5,28 @@ import { ArticleBody } from '@/modules/content/ArticleBody';
 
 const doc = (content: unknown[]) => ({ type: 'doc', content }) as Doc;
 
+const IMAGE = '2c9e7a2b-3d4f-4a5b-8c6d-7e8f9a0b1c2d';
+
 describe('ArticleBody', () => {
+  it('renders images from the media library with caption and credit, and skips deleted ones', () => {
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = 'demo';
+    const html = renderToStaticMarkup(
+      <ArticleBody
+        media={new Map([[IMAGE, { publicId: 'presscompass/images/rice-abcd1234', width: 1600, height: 900, alt: 'Farmers in Karawang', credit: 'Rani/PressCompass' }]])}
+        doc={doc([
+          { type: 'image', attrs: { mediaId: IMAGE, caption: 'The harvest came early.' } },
+          { type: 'image', attrs: { mediaId: '3c9e7a2b-3d4f-4a5b-8c6d-7e8f9a0b1c2d', caption: 'Gone' } },
+        ])}
+      />,
+    );
+    expect(html).toContain('alt="Farmers in Karawang"');
+    expect(html).toContain('width="1600" height="900"');
+    expect(html).toContain('srcSet="https://res.cloudinary.com/demo/image/upload/c_limit,w_320,f_auto,q_auto/presscompass/images/rice-abcd1234 320w');
+    expect(html).toContain('loading="lazy"');
+    expect(html).toContain('<figcaption>The harvest came early. <span class="credit">Photo: Rani/PressCompass</span></figcaption>');
+    expect(html).not.toContain('Gone');
+  });
+
   it('renders text blocks with their marks', () => {
     const html = renderToStaticMarkup(
       <ArticleBody

@@ -59,7 +59,8 @@ export async function saveAuthor(_prev: FormState, form: FormData): Promise<Form
   await requireStaff();
   const { values, errors } = parseAuthor(form);
   if (Object.keys(errors).length) return { errors, values };
-  return store('author', idFrom(form), values, values);
+  const { photoMediaId, ...rest } = values;
+  return store('author', idFrom(form), { ...rest, photo_media_id: photoMediaId }, values);
 }
 
 async function remove(kind: Kind, form: FormData) {

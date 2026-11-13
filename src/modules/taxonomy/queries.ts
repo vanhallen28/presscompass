@@ -6,7 +6,7 @@ import type { AuthorLink } from './validate';
 
 export type Section = { id: string; name: string; slug: string; description: string; position: number; in_nav: boolean };
 export type Tag = { id: string; name: string; slug: string; description: string };
-export type Author = { id: string; name: string; slug: string; role: string; bio: string; links: AuthorLink[] };
+export type Author = { id: string; name: string; slug: string; role: string; bio: string; links: AuthorLink[]; photo_media_id: string | null };
 export type Usage = { sections: Record<string, number>; tags: Record<string, number>; authors: Record<string, number> };
 
 async function rows<T>(query: PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T> {
@@ -37,12 +37,12 @@ export async function getTag(id: string): Promise<Tag | null> {
 
 export async function listAuthors(): Promise<Author[]> {
   const supabase = await createSessionClient();
-  return rows(supabase.from('authors').select('id,name,slug,role,bio,links').order('name'));
+  return rows(supabase.from('authors').select('id,name,slug,role,bio,links,photo_media_id').order('name'));
 }
 
 export async function getAuthor(id: string): Promise<Author | null> {
   const supabase = await createSessionClient();
-  return rows(supabase.from('authors').select('id,name,slug,role,bio,links').eq('id', id).maybeSingle());
+  return rows(supabase.from('authors').select('id,name,slug,role,bio,links,photo_media_id').eq('id', id).maybeSingle());
 }
 
 /** How many articles (any status) use each section, tag and author. */

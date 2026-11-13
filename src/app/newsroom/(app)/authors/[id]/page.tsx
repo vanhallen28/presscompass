@@ -7,6 +7,7 @@ import { TaxonomyForm } from '@/components/newsroom/TaxonomyForm';
 import { Notice, PageHeader } from '@/components/newsroom/ui';
 import { UUID } from '@/lib/doc/schema';
 import { requireStaff } from '@/modules/auth/staff';
+import { mediaByIds } from '@/modules/media/queries';
 import { deleteAuthor, saveAuthor } from '@/modules/taxonomy/actions';
 import { getAuthor, getUsage } from '@/modules/taxonomy/queries';
 
@@ -21,6 +22,7 @@ export default async function EditAuthorPage({ params, searchParams }: { params:
   if (!UUID.test(id)) notFound();
   const [author, usage] = await Promise.all([getAuthor(id), getUsage()]);
   if (!author) notFound();
+  const photo = author.photo_media_id ? ((await mediaByIds([author.photo_media_id])).get(author.photo_media_id) ?? null) : null;
   const articles = usage.authors[id] ?? 0;
   const message = noticeFor('author', notice);
 
@@ -31,7 +33,7 @@ export default async function EditAuthorPage({ params, searchParams }: { params:
       <TaxonomyForm
         kind="author"
         action={saveAuthor}
-        initial={{ id: author.id, name: author.name, slug: author.slug, role: author.role, bio: author.bio, links: author.links }}
+        initial={{ id: author.id, name: author.name, slug: author.slug, role: author.role, bio: author.bio, links: author.links, photo }}
         cancelHref="/newsroom/authors"
       />
       <section className={forms.danger}>

@@ -4,10 +4,12 @@ import { ButtonLink } from '@/components/ds/Button';
 import { Logo } from '@/components/ds/Logo';
 import { sanitizeDoc } from '@/lib/doc/sanitize';
 import { type Block, UUID } from '@/lib/doc/schema';
-import { docText, readingMinutes, wordCount } from '@/lib/doc/text';
+import { bodyMediaIds, docText, readingMinutes, wordCount } from '@/lib/doc/text';
 import { formatWib } from '@/lib/time';
 import { requireStaff } from '@/modules/auth/staff';
-import { ArticleBody } from '@/modules/content/ArticleBody';
+import { CloudImage } from '@/components/media/CloudImage';
+import { ArticleBody, BODY_IMAGE_SIZES } from '@/modules/content/ArticleBody';
+import { mediaByIds } from '@/modules/media/queries';
 import { TYPE_LABELS } from '@/modules/editor/input';
 import { articleLinks, getArticle, getRevision } from '@/modules/editor/queries';
 import { STATUS_LABELS } from '@/modules/editor/status';
@@ -38,10 +40,18 @@ export default async function PreviewPage({ params, searchParams }: { params: Pr
     authorIds: snap.authors ?? article.authorIds,
     body: sanitizeDoc(snap.body ?? article.body),
     sources: snap.sources ?? article.sources,
+    leadMediaId: snap.lead_media_id !== undefined ? snap.lead_media_id : article.lead_media_id,
+    leadCaption: snap.lead_caption ?? article.lead_caption,
   };
 
   const readMoreIds = view.body.content.filter((block): block is Extract<Block, { type: 'readMore' }> => block.type === 'readMore').map((block) => block.attrs.articleId);
-  const [section, authors, links] = await Promise.all([view.sectionId ? getSection(view.sectionId) : null, listAuthors(), articleLinks(readMoreIds)]);
+  const [section, authors, links, media] = await Promise.all([
+    view.sectionId ? getSection(view.sectionId) : null,
+    listAuthors(),
+    articleLinks(readMoreIds),
+    mediaByIds([view.leadMediaId, ...bodyMediaIds(view.body)]),
+  ]);
+  const lead = view.leadMediaId ? media.get(view.leadMediaId) : undefined;
   const byline = view.authorIds.map((authorId) => authors.find((a) => a.id === authorId)).filter((a) => a !== undefined);
   const minutes = readingMinutes(wordCount(docText(view.body)));
   const dateLine = article.published_at
@@ -103,7 +113,19 @@ export default async function PreviewPage({ params, searchParams }: { params: Pr
               {minutes > 0 && ` · ${minutes} min read`}
             </p>
           </div>
-          <ArticleBody doc={view.body} links={links} />
+          {lead && (
+            <figure className={styles.leadFig}>
+              <CloudImage image={lead} alt={lead.alt} preset="hero" sizes={BODY_IMAGE_SIZES} priority className={styles.leadImage} />
+              {(view.leadCaption || lead.credit) && (
+                <figcaption className={styles.cap}>
+                  {view.leadCaption}
+                  {view.leadCaption && lead.credit && ' '}
+                  {lead.credit && <span className={styles.credit}>Photo: {lead.credit}</span>}
+                </figcaption>
+              )}
+            </figure>
+          )}
+          <ArticleBody doc={view.body} links={links} media={media} />
           {view.sources.length > 0 && (
             <section className={styles.sources} aria-label="Sources">
               <h2>Sources</h2>

@@ -295,3 +295,40 @@
     grid-template-columns: 1fr;
   }
 }
+
+.imageCard {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.imageThumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunken);
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.altOk,
+.altMissing {
+  margin-top: 4px;
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ink-secondary);
+}
+
+.altMissing {
+  color: var(--warning);
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .imageCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

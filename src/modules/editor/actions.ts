@@ -4,10 +4,11 @@ import { refresh } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { UUID } from '@/lib/doc/schema';
 import { sanitizeDoc } from '@/lib/doc/sanitize';
-import { docText, readingMinutes, wordCount } from '@/lib/doc/text';
+import { bodyMediaIds, docText, readingMinutes, wordCount } from '@/lib/doc/text';
 import { createSessionClient } from '@/lib/supabase/clients';
 import { formatWib } from '@/lib/time';
 import { requireStaff } from '@/modules/auth/staff';
+import { mediaByIds } from '@/modules/media/queries';
 import { type FieldErrors, parseArticleInput } from './input';
 import { type ArticleListRow, getRevision, listArticles } from './queries';
 import { publishProblems } from './rules';
@@ -62,7 +63,14 @@ export async function saveArticle(raw: unknown, intent: Intent): Promise<SaveRes
   if (readError) return { ok: false, message: `The article could not be saved. ${readError.message}` };
   if (!current) return { ok: false, message: 'This article no longer exists.' };
 
-  const plan = prepareSave({ input, current: current as { status: ArticleStatus; published_at: string | null; scheduled_at: string | null }, intent, now: new Date() });
+  const media = await mediaByIds([input.value.leadMediaId, ...bodyMediaIds(sanitizeDoc(input.value.body))]);
+  const plan = prepareSave({
+    input,
+    current: current as { status: ArticleStatus; published_at: string | null; scheduled_at: string | null },
+    intent,
+    now: new Date(),
+    media,
+  });
   if (!plan.ok) return { ok: false, errors: plan.errors };
 
   const { data, error } = await supabase.rpc('save_article', {
@@ -136,12 +144,18 @@ export async function bulkArticles(_prev: BulkState, form: FormData): Promise<Bu
   const problems: { title: string; reasons: string[] }[] = [];
   if (action === 'publish') {
     const [{ data: rows }, { data: bylines }] = await Promise.all([
-      supabase.from('articles').select('id,title,slug,section_id,standfirst,word_count,status').in('id', ids),
+      supabase.from('articles').select('id,title,slug,section_id,standfirst,word_count,status,lead_media_id,body').in('id', ids),
       supabase.from('article_authors').select('article_id,author_id').in('article_id', ids),
     ]);
+    type Row = { id: string; title: string; slug: string; section_id: string | null; standfirst: string; word_count: number; lead_media_id: string | null; body: unknown };
+    const list = (rows ?? []) as Row[];
+    const images = new Map(list.map((row) => [row.id, bodyMediaIds(sanitizeDoc(row.body))]));
+    const media = await mediaByIds(list.flatMap((row) => [row.lead_media_id, ...(images.get(row.id) ?? [])]));
     ready = [];
-    for (const row of (rows ?? []) as { id: string; title: string; slug: string; section_id: string | null; standfirst: string; word_count: number }[]) {
+    for (const row of list) {
       const found = publishProblems({
+        leadImage: row.lead_media_id ? (media.get(row.lead_media_id) ?? null) : null,
+        imagesWithoutAlt: (images.get(row.id) ?? []).filter((id) => !media.get(id)?.alt.trim()).length,
         title: row.title,
         slug: row.slug,
         sectionId: row.section_id,

@@ -34,6 +34,9 @@ function collect(blocks: (Block | ListItem)[], lines: string[]): void {
       case 'keyFigures':
         lines.push(block.attrs.title, ...block.attrs.items.map((item) => `${item.value} ${item.label}`.trim()));
         break;
+      case 'image':
+        lines.push(block.attrs.caption);
+        break;
       default:
         break;
     }
@@ -53,4 +56,11 @@ export function wordCount(text: string): number {
 
 export function readingMinutes(words: number): number {
   return words > 0 ? Math.ceil(words / WORDS_PER_MINUTE) : 0;
+}
+
+/** Media ids of the images in the text, in order, each once. */
+export function bodyMediaIds(doc: Doc): string[] {
+  const ids: string[] = [];
+  for (const block of doc.content) if (block.type === 'image' && !ids.includes(block.attrs.mediaId)) ids.push(block.attrs.mediaId);
+  return ids;
 }

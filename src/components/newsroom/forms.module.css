@@ -136,6 +136,12 @@
   min-width: 0;
 }
 
+/* A legend is not a flex item, so it gets its own spacing. */
+.fieldset > legend {
+  padding: 0;
+  margin-bottom: var(--space-3);
+}
+
 .row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

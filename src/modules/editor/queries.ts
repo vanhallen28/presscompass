@@ -35,6 +35,8 @@ export type EditableArticle = {
   kicker_label: string;
   standfirst: string;
   body: Doc;
+  lead_media_id: string | null;
+  lead_caption: string;
   status: ArticleStatus;
   published_at: string | null;
   scheduled_at: string | null;
@@ -97,7 +99,7 @@ export async function getArticle(id: string): Promise<EditableArticle | null> {
     await supabase
       .from('articles')
       .select(
-        'id,version,title,slug,section_id,type,kicker_label,standfirst,body,status,published_at,scheduled_at,major_update_at,is_breaking,sources,word_count,updated_at',
+        'id,version,title,slug,section_id,type,kicker_label,standfirst,body,lead_media_id,lead_caption,status,published_at,scheduled_at,major_update_at,is_breaking,sources,word_count,updated_at',
       )
       .eq('id', id)
       .maybeSingle(),

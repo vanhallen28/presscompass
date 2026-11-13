@@ -1,5 +1,5 @@
 import { sanitizeDoc } from '@/lib/doc/sanitize';
-import { docText, readingMinutes, wordCount } from '@/lib/doc/text';
+import { bodyMediaIds, docText, readingMinutes, wordCount } from '@/lib/doc/text';
 import { parseWibInput } from '@/lib/time';
 import type { ArticleInput, FieldErrors } from './input';
 import { publishProblems } from './rules';
@@ -25,11 +25,14 @@ export function prepareSave({
   current,
   intent,
   now,
+  media,
 }: {
   input: { value: ArticleInput; errors: FieldErrors };
   current: Timing;
   intent: Intent;
   now: Date;
+  /** Alt text of the media items this article uses (lead image and images in the text), by id. */
+  media: Map<string, { alt: string }>;
 }): SavePlan {
   if (Object.keys(input.errors).length) return { ok: false, errors: input.errors };
   const article = input.value;
@@ -55,6 +58,8 @@ export function prepareSave({
       authorIds: article.authorIds,
       standfirst: article.standfirst,
       wordCount: words,
+      leadImage: article.leadMediaId ? (media.get(article.leadMediaId) ?? null) : null,
+      imagesWithoutAlt: bodyMediaIds(body).filter((id) => !media.get(id)?.alt.trim()).length,
     });
     if (Object.keys(problems).length) return { ok: false, errors: problems };
   }
@@ -72,6 +77,8 @@ export function prepareSave({
     word_count: words,
     reading_minutes: readingMinutes(words),
     is_breaking: article.isBreaking,
+    lead_media_id: article.leadMediaId,
+    lead_caption: article.leadCaption,
     sources: article.sources,
     status: step.status,
     published_at: step.published_at,

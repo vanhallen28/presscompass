@@ -2,6 +2,8 @@
 
 import { useActionState, useId, useState } from 'react';
 import { ButtonLink } from '@/components/ds/Button';
+import { AuthorPhotoField } from '@/components/media/AuthorPhotoField';
+import type { MediaItem } from '@/modules/media/types';
 import { slugify } from '@/lib/slug';
 import type { FormState } from '@/modules/taxonomy/actions';
 import { AUTHOR_LINK_ROWS, type AuthorLink } from '@/modules/taxonomy/validate';
@@ -21,6 +23,7 @@ export type TaxonomyValues = {
   role?: string;
   bio?: string;
   links?: AuthorLink[];
+  photo?: MediaItem | null;
 };
 
 const PREFIX: Record<Kind, string> = { section: '/', tag: '/tag/', author: '/author/' };
@@ -87,6 +90,7 @@ export function TaxonomyForm({
       {kind === 'author' && (
         <TextField id={`${uid}-role`} name="role" label="Role" optional defaultValue={values.role} error={errors.role} placeholder="Business correspondent" maxLength={80} />
       )}
+      {kind === 'author' && <AuthorPhotoField initial={initial.photo ?? null} />}
       {kind === 'author' ? (
         <TextArea id={`${uid}-bio`} name="bio" label="Biography" optional rows={5} defaultValue={values.bio} error={errors.bio} maxLength={1000} />
       ) : (

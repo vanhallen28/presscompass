@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CloudImage } from '@/components/media/CloudImage';
 import type { Block, Doc, Inline, ListItem, Mark, TableRow } from '@/lib/doc/schema';
 import styles from './article.module.css';
 import { YouTubeEmbed } from './YouTubeEmbed';
@@ -8,6 +9,11 @@ import { YouTubeEmbed } from './YouTubeEmbed';
 // article no longer exists is left out.
 
 export type ArticleLinks = Map<string, { title: string; href: string }>;
+/** Media library items used by image blocks, by id. An image whose item was deleted is left out. */
+export type ArticleMedia = Map<string, { publicId: string; width: number; height: number; alt: string; credit: string }>;
+
+/** Images fill the article column: full width on phones, at most 680 px elsewhere. */
+export const BODY_IMAGE_SIZES = '(max-width: 720px) 100vw, 680px';
 
 const SAFE_HREF = /^(https?:\/\/|mailto:|\/(?!\/)|#)/i;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -58,7 +64,7 @@ function rows(table: TableRow[]) {
   ));
 }
 
-function blocks(content: (Block | ListItem)[], links: ArticleLinks | undefined): ReactNode[] {
+function blocks(content: (Block | ListItem)[], links: ArticleLinks | undefined, media?: ArticleMedia): ReactNode[] {
   return content.map((block, index) => {
     switch (block.type) {
       case 'paragraph':
@@ -127,6 +133,22 @@ function blocks(content: (Block | ListItem)[], links: ArticleLinks | undefined):
         );
       case 'youtube':
         return <YouTubeEmbed key={index} videoId={block.attrs.videoId} title={block.attrs.title} />;
+      case 'image': {
+        const item = media?.get(block.attrs.mediaId);
+        if (!item) return null;
+        return (
+          <figure key={index} className={styles.figure}>
+            <CloudImage image={item} alt={item.alt} sizes={BODY_IMAGE_SIZES} className={styles.image} />
+            {(block.attrs.caption || item.credit) && (
+              <figcaption>
+                {block.attrs.caption}
+                {block.attrs.caption && item.credit && ' '}
+                {item.credit && <span className={styles.credit}>Photo: {item.credit}</span>}
+              </figcaption>
+            )}
+          </figure>
+        );
+      }
       case 'readMore': {
         const link = links?.get(block.attrs.articleId);
         if (!link) return null;
@@ -143,6 +165,6 @@ function blocks(content: (Block | ListItem)[], links: ArticleLinks | undefined):
   });
 }
 
-export function ArticleBody({ doc, links }: { doc: Doc; links?: ArticleLinks }) {
-  return <div className={styles.body}>{blocks(doc.content, links)}</div>;
+export function ArticleBody({ doc, links, media }: { doc: Doc; links?: ArticleLinks; media?: ArticleMedia }) {
+  return <div className={styles.body}>{blocks(doc.content, links, media)}</div>;
 }

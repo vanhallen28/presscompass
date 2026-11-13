@@ -16,6 +16,7 @@ export const SPECIAL_DEFAULTS = {
   keyFigures: { title: '', items: [], source: '' },
   youtube: { videoId: '', title: '' },
   readMore: { articleId: '', title: '' },
+  image: { mediaId: '', caption: '' },
 } as const;
 
 export type SpecialKind = keyof typeof SPECIAL_DEFAULTS;

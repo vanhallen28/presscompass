@@ -1,11 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useEffectEvent, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ds/Button';
 import { ConfirmButton } from '@/components/newsroom/ConfirmButton';
 import { BodyEditor, type BodyEditorHandle } from '@/components/newsroom/editor/BodyEditor';
-import { CheckboxField, SelectField, TextField } from '@/components/newsroom/Field';
+import { CloudImage } from '@/components/media/CloudImage';
+import { ImagePickerDialog } from '@/components/media/ImagePickerDialog';
+import { type MediaLookup, MediaLookupContext } from '@/components/newsroom/editor/media-context';
+import { CheckboxField, SelectField, TextArea, TextField } from '@/components/newsroom/Field';
 import forms from '@/components/newsroom/forms.module.css';
 import { StatusBadge } from '@/components/newsroom/StatusBadge';
 import { Notice, ui } from '@/components/newsroom/ui';
@@ -15,6 +18,7 @@ import { formatWib, toWibInput } from '@/lib/time';
 import { deleteArticle, findArticles, saveArticle } from '@/modules/editor/actions';
 import { ARTICLE_TYPES, type FieldErrors, MAX, type Source, TYPE_LABELS } from '@/modules/editor/input';
 import type { EditableArticle } from '@/modules/editor/queries';
+import type { MediaItem } from '@/modules/media/types';
 import { MIN_WORDS, UNTITLED_SLUG } from '@/modules/editor/rules';
 import { type ArticleStatus, canAutosave, CONFIRMATIONS, type Intent, intentLabel, statusActions } from '@/modules/editor/status';
 import styles from './editor-page.module.css';
@@ -36,7 +40,16 @@ const DONE: Partial<Record<Intent, string>> = {
   restore: 'Restored to draft.',
 };
 
-const ANCHORS: Record<string, string> = { authorIds: 'authors', sectionId: 'section', scheduledAt: 'schedule', body: 'body-label', sources: 'sources-title' };
+const ANCHORS: Record<string, string> = {
+  authorIds: 'authors',
+  sectionId: 'section',
+  scheduledAt: 'schedule',
+  body: 'body-label',
+  sources: 'sources-title',
+  leadImage: 'lead-title',
+  leadCaption: 'lead-caption',
+  images: 'body-label',
+};
 
 const FIELD_LABELS: Record<string, string> = {
   title: 'Headline',
@@ -48,6 +61,9 @@ const FIELD_LABELS: Record<string, string> = {
   scheduledAt: 'Publish time',
   sources: 'Sources',
   kicker: 'Label',
+  leadImage: 'Lead image',
+  leadCaption: 'Lead image caption',
+  images: 'Images',
   status: 'Status',
 };
 
@@ -56,9 +72,12 @@ export function ArticleEditor({
   sections,
   authors,
   tags,
+  media,
   notice,
 }: {
   article: EditableArticle;
+  /** Media items the article uses (lead image and images in the text). */
+  media: MediaItem[];
   sections: (Option & { slug: string })[];
   authors: (Option & { role: string })[];
   tags: Option[];
@@ -82,6 +101,15 @@ export function ArticleEditor({
   const [tagIds, setTagIds] = useState(article.tagIds);
   const [related, setRelated] = useState<Related[]>(article.related.map(({ id: rid, title: t }) => ({ id: rid, title: t })));
   const [sources, setSources] = useState<Source[]>(article.sources);
+  const [known, setKnown] = useState(() => new Map(media.map((item) => [item.id, item])));
+  const [leadMediaId, setLeadMediaId] = useState(article.lead_media_id);
+  const [leadCaption, setLeadCaption] = useState(article.lead_caption);
+  const [pickingLead, setPickingLead] = useState(false);
+  const lookup = useMemo<MediaLookup>(
+    () => ({ get: (mediaId) => known.get(mediaId), remember: (item) => setKnown((current) => new Map(current).set(item.id, item)) }),
+    [known],
+  );
+  const leadMedia = leadMediaId ? known.get(leadMediaId) : undefined;
   const [words, setWords] = useState(article.word_count);
 
   const [version, setVersion] = useState(article.version);
@@ -143,6 +171,8 @@ export function ArticleEditor({
             sources,
             scheduledAt: sendSchedule ? scheduleInput || null : null,
             majorUpdate: intent === 'update' && majorUpdate,
+            leadMediaId,
+            leadCaption,
           },
           intent,
         );
@@ -184,7 +214,29 @@ export function ArticleEditor({
         setSaving(null);
       }
     },
-    [saving, conflict, status, article.id, version, title, slug, slugTouched, sectionId, type, kicker, standfirst, isBreaking, authorIds, tagIds, related, sources, scheduleInput, majorUpdate],
+    [
+      saving,
+      conflict,
+      status,
+      article.id,
+      version,
+      title,
+      slug,
+      slugTouched,
+      sectionId,
+      type,
+      kicker,
+      standfirst,
+      isBreaking,
+      authorIds,
+      tagIds,
+      related,
+      sources,
+      scheduleInput,
+      majorUpdate,
+      leadMediaId,
+      leadCaption,
+    ],
   );
 
   // Autosave every 10 seconds while there are changes (drafts and articles in review only).
@@ -276,6 +328,7 @@ export function ArticleEditor({
   const availableTags = tags.filter((t) => !tagIds.includes(t.id));
 
   return (
+    <MediaLookupContext value={lookup}>
     <div className={styles.page}>
       <h1 className={ui.srOnly}>Edit article</h1>
       <div className={styles.top}>
@@ -444,6 +497,55 @@ export function ArticleEditor({
               )}
               {others.map((intent) => actionButton(intent, 'secondary'))}
             </div>
+          </section>
+
+          <section className={styles.card} aria-labelledby={id('lead-title')}>
+            <h2 className={styles.cardTitle} id={id('lead-title')}>
+              Lead image
+            </h2>
+            {errorFor('leadImage') && <p className={forms.error}>{errorFor('leadImage')}</p>}
+            {leadMediaId && !leadMedia && <p className={forms.hint}>The chosen image is no longer in the media library.</p>}
+            {leadMedia && (
+              <figure className={styles.lead}>
+                <CloudImage image={leadMedia} alt="" preset="hero" sizes="300px" className={styles.leadImage} />
+                <figcaption className={leadMedia.alt ? styles.leadAlt : styles.leadAltMissing}>
+                  {leadMedia.alt ? `Alt text: ${leadMedia.alt}` : 'No alt text yet. Needed before publishing.'}
+                </figcaption>
+              </figure>
+            )}
+            {!readOnly && (
+              <div className={styles.rowButtons}>
+                <Button size="sm" icon="image" onClick={() => setPickingLead(true)}>
+                  {leadMediaId ? 'Change image' : 'Choose image'}
+                </Button>
+                {leadMediaId && (
+                  <Button
+                    size="sm"
+                    variant="quiet"
+                    onClick={() => {
+                      setLeadMediaId(null);
+                      touch();
+                    }}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+            )}
+            {leadMediaId && (
+              <TextArea
+                id={id('lead-caption')}
+                label="Caption"
+                optional
+                rows={2}
+                value={leadCaption}
+                disabled={readOnly}
+                maxLength={MAX.leadCaption}
+                error={errorFor('leadCaption')}
+                hint="Shown under the lead image. Credit comes from the media library."
+                onChange={(event) => change(setLeadCaption)(event.target.value)}
+              />
+            )}
           </section>
 
           <section className={styles.card} aria-label="Details">
@@ -657,6 +759,23 @@ export function ArticleEditor({
         </aside>
       </div>
     </div>
+    {pickingLead && (
+      <ImagePickerDialog
+        title="Lead image"
+        initial={leadMedia ?? null}
+        caption={null}
+        submitLabel="Use as lead image"
+        onClose={() => setPickingLead(false)}
+        onSave={({ media: picked }) => {
+          lookup.remember(picked);
+          setLeadMediaId(picked.id);
+          if (!leadCaption && picked.caption) setLeadCaption(picked.caption);
+          setPickingLead(false);
+          touch();
+        }}
+      />
+    )}
+    </MediaLookupContext>
   );
 }
 

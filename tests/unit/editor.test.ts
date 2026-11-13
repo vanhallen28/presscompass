@@ -8,6 +8,12 @@ const NOW = new Date('2026-11-13T03:00:00Z');
 const ID = '0b8a6f5e-58a8-4d5c-9b8e-0a5b8a1c2d3e';
 const SECTION = '1c9e7a2b-3d4f-4a5b-8c6d-7e8f9a0b1c2d';
 const AUTHOR = '2d0f8b3c-4e5a-4b6c-9d7e-8f9a0b1c2d3e';
+const LEAD = '4e1f9c3d-5f6a-4c7d-8e9f-0a1b2c3d4e5f';
+const INLINE = '5f2a0d4e-6a7b-4d8e-9f0a-1b2c3d4e5f60';
+const MEDIA = new Map([
+  [LEAD, { alt: 'Farmers in Karawang' }],
+  [INLINE, { alt: '' }],
+]);
 const longBody = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'word '.repeat(160).trim() }] }] };
 
 const raw = (over: Record<string, unknown> = {}) => ({
@@ -28,6 +34,8 @@ const raw = (over: Record<string, unknown> = {}) => ({
   sources: [],
   scheduledAt: null,
   majorUpdate: false,
+  leadMediaId: LEAD,
+  leadCaption: '',
   ...over,
 });
 
@@ -105,7 +113,16 @@ describe('transition', () => {
 });
 
 describe('publish rules', () => {
-  const ready = { title: 'Rice prices climb', slug: 'rice-prices-climb', sectionId: SECTION, authorIds: [AUTHOR], standfirst: 'Why.', wordCount: 150 };
+  const ready = {
+    title: 'Rice prices climb',
+    slug: 'rice-prices-climb',
+    sectionId: SECTION,
+    authorIds: [AUTHOR],
+    standfirst: 'Why.',
+    wordCount: 150,
+    leadImage: { alt: 'Farmers in Karawang' },
+    imagesWithoutAlt: 0,
+  };
 
   it('passes a complete article', () => {
     expect(publishProblems(ready)).toEqual({});
@@ -113,14 +130,20 @@ describe('publish rules', () => {
 
   it('names every missing piece next to its field', () => {
     expect(
-      publishProblems({ title: ' ', slug: 'untitled-0a1b2c3d', sectionId: null, authorIds: [], standfirst: '', wordCount: 149 }),
+      publishProblems({ title: ' ', slug: 'untitled-0a1b2c3d', sectionId: null, authorIds: [], standfirst: '', wordCount: 149, leadImage: null, imagesWithoutAlt: 2 }),
     ).toEqual({
+      leadImage: 'Choose a lead image.',
+      images: '2 images in the text need alt text.',
       title: 'Add a headline before publishing.',
       slug: 'Set the address before publishing. It fills in from the headline.',
       sectionId: 'Choose a section.',
       authorIds: 'Add at least one author.',
       standfirst: 'Add a standfirst: one or two sentences under the headline.',
       body: 'The article needs at least 150 words. It has 149.',
+    });
+    expect(publishProblems({ ...ready, leadImage: { alt: ' ' }, imagesWithoutAlt: 1 })).toEqual({
+      leadImage: 'Add alt text to the lead image: describe what it shows.',
+      images: 'One image in the text needs alt text.',
     });
   });
 });
@@ -153,6 +176,9 @@ describe('parseArticleInput', () => {
     expect(parseArticleInput(raw({ id: 'nope' })).ok).toBe(false);
     expect(parseArticleInput(raw({ authorIds: ['nope'] })).ok).toBe(false);
     expect(parseArticleInput(raw({ type: 'gossip' })).ok).toBe(false);
+    expect(parseArticleInput(raw({ leadMediaId: 'nope' })).ok).toBe(false);
+    const long = parseArticleInput(raw({ leadCaption: 'x'.repeat(301) }));
+    expect(long.ok && long.errors).toEqual({ leadCaption: 'Keep the caption under 300 characters.' });
   });
 });
 
@@ -165,7 +191,7 @@ describe('prepareSave', () => {
   };
 
   it('builds the fields, relations and revision note for a publish', () => {
-    const plan = prepareSave({ input: parsed(), current, intent: 'publish', now: NOW });
+    const plan = prepareSave({ input: parsed(), current, intent: 'publish', now: NOW, media: MEDIA });
     expect(plan.ok).toBe(true);
     if (!plan.ok) return;
     expect(plan.fields).toMatchObject({
@@ -178,25 +204,39 @@ describe('prepareSave', () => {
       word_count: 160,
       reading_minutes: 1,
     });
+    expect(plan.fields).toMatchObject({ lead_media_id: LEAD, lead_caption: '' });
     expect(plan.fields.body_text).toBe('word '.repeat(160).trim());
     expect(plan).toMatchObject({ authors: [AUTHOR], tags: [], related: [], revision: 'Published', throttle: false });
   });
 
   it('checks the publish rules only for steps that put an article in front of readers', () => {
     const thin = parsed({ standfirst: '', body: { type: 'doc', content: [] } });
-    expect(prepareSave({ input: thin, current, intent: 'save', now: NOW }).ok).toBe(true);
-    expect(prepareSave({ input: thin, current, intent: 'publish', now: NOW })).toEqual({
+    expect(prepareSave({ input: thin, current, intent: 'save', now: NOW, media: MEDIA }).ok).toBe(true);
+    expect(prepareSave({ input: thin, current, intent: 'publish', now: NOW, media: MEDIA })).toEqual({
       ok: false,
       errors: { standfirst: 'Add a standfirst: one or two sentences under the headline.', body: 'The article needs at least 150 words. It has 0.' },
     });
   });
 
+  it('needs a lead image and alt text on every image before publishing', () => {
+    const withImage = parsed({ body: { type: 'doc', content: [...longBody.content, { type: 'image', attrs: { mediaId: INLINE, caption: '' } }] } });
+    expect(prepareSave({ input: withImage, current, intent: 'publish', now: NOW, media: MEDIA })).toEqual({
+      ok: false,
+      errors: { images: 'One image in the text needs alt text.' },
+    });
+    expect(prepareSave({ input: parsed({ leadMediaId: null }), current, intent: 'publish', now: NOW, media: MEDIA })).toEqual({
+      ok: false,
+      errors: { leadImage: 'Choose a lead image.' },
+    });
+    expect(prepareSave({ input: parsed({ leadMediaId: null }), current, intent: 'save', now: NOW, media: MEDIA }).ok).toBe(true);
+  });
+
   it('blocks any save while a field is malformed, and reads the schedule in WIB', () => {
-    expect(prepareSave({ input: parsed({ slug: 'Bad Slug' }), current, intent: 'autosave', now: NOW })).toEqual({
+    expect(prepareSave({ input: parsed({ slug: 'Bad Slug' }), current, intent: 'autosave', now: NOW, media: MEDIA })).toEqual({
       ok: false,
       errors: { slug: 'Use lowercase letters, numbers and single hyphens.' },
     });
-    const plan = prepareSave({ input: parsed({ scheduledAt: '2026-11-14T09:00' }), current, intent: 'schedule', now: NOW });
+    const plan = prepareSave({ input: parsed({ scheduledAt: '2026-11-14T09:00' }), current, intent: 'schedule', now: NOW, media: MEDIA });
     expect(plan.ok && plan.fields.scheduled_at).toBe('2026-11-14T02:00:00.000Z');
   });
 });

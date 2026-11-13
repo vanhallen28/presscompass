@@ -310,3 +310,27 @@
     margin-left: 0;
   }
 }
+
+.lead {
+  margin: 0;
+}
+
+.leadImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunken);
+}
+
+.leadAlt,
+.leadAltMissing {
+  margin-top: 6px;
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ink-secondary);
+}
+
+.leadAltMissing {
+  color: var(--warning);
+  font-weight: 500;
+}

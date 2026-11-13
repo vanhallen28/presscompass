@@ -24,7 +24,7 @@ type Context = 'doc' | 'quote' | 'item' | 'cell';
 const TEXT_MAX = 20_000;
 const SAFE_HREF = /^(https?:\/\/|mailto:|\/(?!\/)|#)/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const SPECIAL = new Set(['pullQuote', 'editorNote', 'keyFigures', 'youtube', 'readMore']);
+const SPECIAL = new Set(['pullQuote', 'editorNote', 'keyFigures', 'youtube', 'readMore', 'image']);
 
 const isObject = (value: unknown): value is Raw => typeof value === 'object' && value !== null && !Array.isArray(value);
 const kids = (node: Raw): Raw[] => (Array.isArray(node.content) ? node.content.filter(isObject) : []);
@@ -135,6 +135,10 @@ function cleanSpecial(node: Raw): Block | null {
     case 'readMore':
       return typeof a.articleId === 'string' && UUID.test(a.articleId)
         ? { type: 'readMore', attrs: { articleId: a.articleId.toLowerCase(), title: text(a.title, LIMITS.readMoreTitle) } }
+        : null;
+    case 'image':
+      return typeof a.mediaId === 'string' && UUID.test(a.mediaId)
+        ? { type: 'image', attrs: { mediaId: a.mediaId.toLowerCase(), caption: text(a.caption, LIMITS.imageCaption) } }
         : null;
     default:
       return null;

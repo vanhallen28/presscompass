@@ -265,3 +265,25 @@
   font: 400 13px/18px var(--font-sans);
   opacity: 0.75;
 }
+
+.figure {
+  margin: 32px 0;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--paper-sunken);
+}
+
+.figure figcaption,
+.leadCaption {
+  margin-top: 8px;
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ink-secondary);
+}
+
+.credit {
+  color: var(--ink-muted);
+}

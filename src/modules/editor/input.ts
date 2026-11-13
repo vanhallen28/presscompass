@@ -15,7 +15,7 @@ export const TYPE_LABELS: Record<ArticleType, string> = {
   feature: 'Feature',
 };
 
-export const MAX = { title: 200, kicker: 40, standfirst: 400, authors: 10, tags: 30, related: 6, sources: 30 } as const;
+export const MAX = { title: 200, kicker: 40, standfirst: 400, authors: 10, tags: 30, related: 6, sources: 30, leadCaption: 300 } as const;
 
 export type Source = { title: string; url: string; publisher: string; accessed: string };
 
@@ -37,6 +37,8 @@ export type ArticleInput = {
   sources: Source[];
   scheduledAt: string | null;
   majorUpdate: boolean;
+  leadMediaId: string | null;
+  leadCaption: string;
 };
 
 export type InputField = 'title' | 'slug' | 'kicker' | 'standfirst' | 'sources';
@@ -73,7 +75,9 @@ export function parseArticleInput(raw: unknown): ParseResult {
     !Array.isArray(r.sources) ||
     r.sources.length > MAX.sources ||
     !r.sources.every(isObject) ||
-    !(r.scheduledAt === null || typeof r.scheduledAt === 'string')
+    !(r.scheduledAt === null || typeof r.scheduledAt === 'string') ||
+    !(r.leadMediaId === null || (typeof r.leadMediaId === 'string' && UUID.test(r.leadMediaId))) ||
+    typeof r.leadCaption !== 'string'
   ) {
     return { ok: false, error: UNEXPECTED };
   }
@@ -87,6 +91,8 @@ export function parseArticleInput(raw: unknown): ParseResult {
   if (!isSlug(slug)) errors.slug = 'Use lowercase letters, numbers and single hyphens.';
   if (kicker.length > MAX.kicker) errors.kicker = `Keep the label under ${MAX.kicker} characters.`;
   if (standfirst.length > MAX.standfirst) errors.standfirst = `Keep the standfirst under ${MAX.standfirst} characters.`;
+  const leadCaption = (r.leadCaption as string).trim();
+  if (leadCaption.length > MAX.leadCaption) errors.leadCaption = `Keep the caption under ${MAX.leadCaption} characters.`;
 
   const sources: Source[] = [];
   let badSource = false;
@@ -124,6 +130,8 @@ export function parseArticleInput(raw: unknown): ParseResult {
       sources,
       scheduledAt: r.scheduledAt as string | null,
       majorUpdate: r.majorUpdate as boolean,
+      leadMediaId: (r.leadMediaId as string | null)?.toLowerCase() ?? null,
+      leadCaption,
     },
   };
 }

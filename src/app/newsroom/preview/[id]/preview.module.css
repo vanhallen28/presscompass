@@ -116,6 +116,27 @@
   color: var(--ink-muted);
 }
 
+.leadFig {
+  margin: 0 0 var(--space-6);
+}
+
+.leadImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--paper-sunken);
+}
+
+.cap {
+  margin-top: 8px;
+  font: 400 13px/18px var(--font-sans);
+  color: var(--ink-secondary);
+}
+
+.credit {
+  color: var(--ink-muted);
+}
+
 .sources {
   margin-top: var(--space-7);
   padding-top: var(--space-4);
