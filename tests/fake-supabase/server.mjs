@@ -1,10 +1,12 @@
-// Fake Supabase for E2E tests and local previews without a Supabase project (no Docker):
-// Auth for two test users, and a Data API that runs real SQL on a fresh PostgreSQL database.
+// Fake Supabase (and Cloudinary) for E2E tests and local previews without the real services (no Docker):
+// Auth for two test users, a Data API that runs real SQL on a fresh PostgreSQL database, and
+// Cloudinary uploads, Admin API and image delivery under /fake-cloudinary.
 //   FAKE_SUPABASE_PORT   port to listen on (3101)
 //   FAKE_DATABASE_URL    a PostgreSQL server where the user may create databases
 //   FAKE_DATABASE_NAME   database to (re)create on start (presscompass_e2e)
 import { createServer } from 'node:http';
 import { handleAuth, requestClaims } from './auth.mjs';
+import { handleCloudinary } from './cloudinary.mjs';
 import { createDatabase } from './database.mjs';
 import { handleRest } from './rest.mjs';
 
@@ -21,11 +23,13 @@ const server = createServer(async (req, res) => {
     res.writeHead(status, { 'content-type': 'application/json', ...headers });
     res.end(body === undefined ? '' : JSON.stringify(body));
   };
-  let raw = '';
-  for await (const chunk of req) raw += chunk;
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const raw = Buffer.concat(chunks);
+  if (await handleCloudinary(req, url, raw, res)) return;
   let body = {};
   try {
-    body = raw ? JSON.parse(raw) : {};
+    body = raw.length ? JSON.parse(raw.toString()) : {};
   } catch {
     return send(400, { message: 'Invalid JSON body' });
   }
