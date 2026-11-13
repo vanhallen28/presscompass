@@ -19,7 +19,7 @@ export async function SiteFooter({ ads }: { ads: SiteAds }) {
       <div className={styles.wrap}>
         <div className={styles.footTop}>
           <div>
-            <Logo height={30} tone="inverse" className={styles.footLogo} />
+            <Logo height={30} tone="current" className={styles.footLogo} />
             <p className={styles.footAbout}>{ABOUT}</p>
           </div>
           <div>

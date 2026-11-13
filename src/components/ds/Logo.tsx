@@ -6,7 +6,7 @@ const NORTH =
 const SOUTH = 'M24.5 32L39.5 32L32 54Z';
 
 export type LogoVariant = 'primary' | 'wordmark' | 'symbol';
-export type LogoTone = 'default' | 'inverse' | 'mono';
+export type LogoTone = 'default' | 'inverse' | 'current' | 'mono';
 
 type LogoProps = {
   variant?: LogoVariant;
@@ -30,7 +30,8 @@ function NibSymbol({ x, y, size, ink, mono }: { x: number; y: number; size: numb
 
 /** The PressCompass logo as inline SVG. Ink follows the theme; the north tip is always compass-mark red. */
 export function Logo({ variant = 'primary', tone = 'default', height, label = 'PressCompass', className }: LogoProps) {
-  const ink = tone === 'inverse' ? 'var(--on-navy)' : 'var(--ink)';
+  // 'current' follows the surrounding text colour (the site footer, which is navy in light mode and dark grey in dark mode).
+  const ink = tone === 'inverse' ? 'var(--on-navy)' : tone === 'current' ? 'currentColor' : 'var(--ink)';
   const mono = tone === 'mono';
   const a11y = label ? { role: 'img' as const, 'aria-label': label } : { 'aria-hidden': true as const };
 
