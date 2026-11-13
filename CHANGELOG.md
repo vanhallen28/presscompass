@@ -1,5 +1,14 @@
 # Riwayat versi
 
+## v0.4.1 · 13 November 2026 · Konten awal
+
+- **Paket konten awal** di `content/starter`: 10 artikel penjelas berbahasa Inggris (beras, nikel, DPR/DPD/MPR, gunung api, Nusantara, BRICS, kebakaran gambut, ekonomi 2025, penduduk per provinsi, zona waktu) dengan sumber bertanggal, Key figures, dan 3 Chart, plus 10 ilustrasi 1800 × 1200 buatan sendiri.
+- **`npm run content:starter`** mengunggah ilustrasi ke Cloudinary, mengisi Media (alt text, keterangan, kredit), membuat rubrik News, Politics, Business, World, Science, Data bila belum ada, penulis PressCompass Desk, tag, lalu artikel terbit (atau `-- --draft`). Aman dijalankan ulang; `-- --dry-run` hanya memeriksa berkas.
+- **Kredit gambar:** kredit yang diawali label seperti `Illustration:` atau `Graphic:` tampil apa adanya; kredit lain tetap "Photo: …". Petunjuknya ada di halaman gambar di Media.
+- **Perbaikan:** tabel data tersembunyi milik Chart tidak lagi melebarkan halaman artikel di HP.
+- **Langkah tambahan:** jalankan `npm run content:starter` sebelum `git push` (tidak ada migrasi baru).
+- Tes: 118 unit (termasuk pemeriksaan setiap artikel awal terhadap aturan editor), 43 database, 62 E2E.
+
 ## v0.4.0 · 13 November 2026 · Situs publik (Rencana 4)
 
 - **Situs publik** dengan tata letak yang dikunci di preview: baris tanggal (WIB), masthead, navigasi rubrik dengan garis merah untuk rubrik aktif, pita **Latest** (artikel 24 jam terakhir), menu rubrik dan kotak cari dari tombol menu (tanpa JavaScript), footer navy.

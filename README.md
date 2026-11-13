@@ -16,6 +16,7 @@ Media berita berbahasa Inggris tentang Indonesia di presscompass.site, lengkap d
 | `npm run db:link -- --project-ref KODE` | menautkan folder ini ke proyek Supabase (meminta password database) |
 | `npm run db:push` | menerapkan migrasi baru ke proyek Supabase yang ditautkan |
 | `npm run staff:grant -- email@anda.com` | memberi akses Newsroom ke pengguna Supabase |
+| `npm run content:starter` | memasang 10 artikel awal beserta ilustrasinya (Cloudinary); aman dijalankan ulang |
 
 Langkah pemasangan lengkap: `docs/ops/setup.md`. Memasang versi baru: `docs/ops/update.md`. Riwayat versi: `CHANGELOG.md`.
 
@@ -26,6 +27,11 @@ Langkah pemasangan lengkap: `docs/ops/setup.md`. Memasang versi baru: `docs/ops/
 - Header dengan tanggal (WIB), menu, navigasi rubrik, pita Latest (24 jam terakhir); footer navy dengan sakelar tema Auto, Light, Dark.
 - Halaman disimpan di cache dan diperbarui sendiri setelah perubahan di Newsroom. Artikel terjadwal terbit lewat `/api/cron/run` (Vercel Cron harian, Supabase Cron 5 menit: `docs/ops/setup.md` langkah F).
 - Situs masih `noindex` sampai rilis (Rencana 8).
+
+## Konten awal (v0.4.1)
+
+- Sepuluh artikel penjelas berbahasa Inggris dengan sumber dan ilustrasi buatan sendiri, satu atau dua per rubrik (News, Politics, Business, World, Science, Data), tiga di antaranya dengan Chart.
+- Dipasang dengan `npm run content:starter` (atau `-- --draft` untuk diperiksa dulu). Setelah itu menjadi artikel biasa di Newsroom. Rincian: `content/starter/README.md`.
 
 ## Newsroom (v0.4.0)
 

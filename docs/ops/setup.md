@@ -141,6 +141,18 @@ Artikel terjadwal diterbitkan oleh `GET /api/cron/run`. Vercel Hobby hanya boleh
 
 Mematikan: `select cron.unschedule('presscompass-run');`. Rahasia hanya memberi izin menerbitkan artikel yang memang sudah jatuh tempo (aman bila terpanggil berlebih). Bila bocor, buat nilai baru, ganti di Vercel dan Vault, lalu Redeploy.
 
+## G. Konten awal (opsional)
+
+Sepuluh artikel penjelas dengan ilustrasinya untuk mengisi situs sebelum artikel sendiri terbit (`content/starter/README.md`).
+Butuh `.env` yang sudah berisi kunci Supabase dan Cloudinary (langkah B dan E).
+
+```bash
+npm run content:starter
+```
+
+**Hasil yang diharapkan:** daftar `Published: ...` dan baris `10 of 10 starter articles added.` Lalu push ke GitHub supaya deploy berikutnya memuatnya.
+Untuk memeriksa dulu di Newsroom: `npm run content:starter -- --draft`, lalu terbitkan dari **Articles**.
+
 ## Bila ada masalah
 
 | Gejala | Penyebab dan jalan keluar |
@@ -156,4 +168,6 @@ Mematikan: `select cron.unschedule('presscompass-run');`. Rahasia hanya memberi 
 | `status_code` 503: "CRON_SECRET is not set" | `CRON_SECRET` belum ada di Vercel atau kurang dari 32 karakter; isi lalu Redeploy |
 | Artikel sudah terbit di Newsroom tetapi situs masih menampilkan "Page not found" | muat ulang halaman setelah beberapa detik: situs menyimpan halaman di cache dan diperbarui sesaat setelah Publish |
 | Build Vercel gagal dengan pesan `site_list:` atau `sections:` | build membaca Supabase untuk menyiapkan halaman; proyek Supabase dijeda atau tidak terjangkau. Pulihkan proyek (Supabase, Restore), lalu Redeploy. Deploy lama tetap tayang |
+| `content:starter`: "Cloudinary did not take ...: Invalid Signature" | API key atau secret Cloudinary di `.env` salah; salin ulang (langkah E) |
+| `content:starter`: "This Supabase project is not set up for PressCompass" | kunci di `.env` milik proyek lain, atau `npm run db:push` belum dijalankan |
 | Deploy Vercel diblokir: commit author tidak punya akses | perintah pasang selalu memuat `git commit --amend --no-edit --reset-author` sebelum push; jalankan lalu push lagi |
