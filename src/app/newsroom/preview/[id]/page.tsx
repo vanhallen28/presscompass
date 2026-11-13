@@ -7,13 +7,11 @@ import { type Block, UUID } from '@/lib/doc/schema';
 import { bodyMediaIds, docText, readingMinutes, wordCount } from '@/lib/doc/text';
 import { formatWib } from '@/lib/time';
 import { requireStaff } from '@/modules/auth/staff';
-import { CloudImage } from '@/components/media/CloudImage';
-import { ArticleBody, BODY_IMAGE_SIZES } from '@/modules/content/ArticleBody';
+import { ArticleView } from '@/components/site/ArticleView';
 import { mediaByIds } from '@/modules/media/queries';
-import { TYPE_LABELS } from '@/modules/editor/input';
 import { articleLinks, getArticle, getRevision } from '@/modules/editor/queries';
 import { STATUS_LABELS } from '@/modules/editor/status';
-import { getSection, listAuthors } from '@/modules/taxonomy/queries';
+import { getSection, listAuthors, listTags } from '@/modules/taxonomy/queries';
 import styles from './preview.module.css';
 
 export const metadata: Metadata = { title: 'Preview' };
@@ -42,24 +40,26 @@ export default async function PreviewPage({ params, searchParams }: { params: Pr
     sources: snap.sources ?? article.sources,
     leadMediaId: snap.lead_media_id !== undefined ? snap.lead_media_id : article.lead_media_id,
     leadCaption: snap.lead_caption ?? article.lead_caption,
+    isBreaking: snap.is_breaking ?? article.is_breaking,
+    tagIds: snap.tags ?? article.tagIds,
   };
 
   const readMoreIds = view.body.content.filter((block): block is Extract<Block, { type: 'readMore' }> => block.type === 'readMore').map((block) => block.attrs.articleId);
-  const [section, authors, links, media] = await Promise.all([
+  const [section, authors, tags, links] = await Promise.all([
     view.sectionId ? getSection(view.sectionId) : null,
     listAuthors(),
+    listTags(),
     articleLinks(readMoreIds),
-    mediaByIds([view.leadMediaId, ...bodyMediaIds(view.body)]),
   ]);
-  const lead = view.leadMediaId ? media.get(view.leadMediaId) : undefined;
   const byline = view.authorIds.map((authorId) => authors.find((a) => a.id === authorId)).filter((a) => a !== undefined);
-  const minutes = readingMinutes(wordCount(docText(view.body)));
-  const dateLine = article.published_at
-    ? `${formatWib(article.published_at)} WIB`
-    : article.scheduled_at
+  const media = await mediaByIds([view.leadMediaId, ...bodyMediaIds(view.body), ...byline.map((author) => author.photo_media_id)]);
+  const image = (mediaId: string | null) => (mediaId ? (media.get(mediaId) ?? null) : null);
+  const published = article.status === 'published' && article.published_at;
+  const dateLine = published
+    ? undefined
+    : article.scheduled_at && article.status === 'scheduled'
       ? `Scheduled for ${formatWib(article.scheduled_at)} WIB`
       : 'Not published yet';
-  const kicker = view.kicker || section?.name || TYPE_LABELS[view.type];
 
   return (
     <div className={styles.page}>
@@ -82,71 +82,29 @@ export default async function PreviewPage({ params, searchParams }: { params: Pr
         <Logo height={30} />
       </header>
       <main className={styles.wrap}>
-        <article className={styles.article}>
-          <header className={styles.head}>
-            <p className={styles.kickers}>
-              <span className={styles.kicker}>{kicker}</span>
-              {view.type !== 'news' && kicker !== TYPE_LABELS[view.type] && <span className={styles.kickerPlain}>{TYPE_LABELS[view.type]}</span>}
-            </p>
-            <h1 className={styles.headline}>{view.title || 'Untitled'}</h1>
-            {view.standfirst && <p className={styles.stand}>{view.standfirst}</p>}
-          </header>
-          <div className={styles.byline}>
-            <p className={styles.who}>
-              {byline.length ? (
-                <>
-                  By{' '}
-                  {byline.map((author, index) => (
-                    <span key={author.id}>
-                      {index > 0 && (index === byline.length - 1 ? ' and ' : ', ')}
-                      <b>{author.name}</b>
-                    </span>
-                  ))}
-                  {byline.length === 1 && byline[0].role && <span className={styles.role}> · {byline[0].role}</span>}
-                </>
-              ) : (
-                <span className={styles.role}>No author yet</span>
-              )}
-            </p>
-            <p className={styles.meta}>
-              {dateLine}
-              {minutes > 0 && ` · ${minutes} min read`}
-            </p>
-          </div>
-          {lead && (
-            <figure className={styles.leadFig}>
-              <CloudImage image={lead} alt={lead.alt} preset="hero" sizes={BODY_IMAGE_SIZES} priority className={styles.leadImage} />
-              {(view.leadCaption || lead.credit) && (
-                <figcaption className={styles.cap}>
-                  {view.leadCaption}
-                  {view.leadCaption && lead.credit && ' '}
-                  {lead.credit && <span className={styles.credit}>Photo: {lead.credit}</span>}
-                </figcaption>
-              )}
-            </figure>
-          )}
-          <ArticleBody doc={view.body} links={links} media={media} />
-          {view.sources.length > 0 && (
-            <section className={styles.sources} aria-label="Sources">
-              <h2>Sources</h2>
-              <ol>
-                {view.sources.map((source, index) => (
-                  <li key={index}>
-                    {/^https?:\/\//i.test(source.url) ? (
-                      <a href={source.url} rel="noopener">
-                        {source.title}
-                      </a>
-                    ) : (
-                      source.title
-                    )}
-                    {source.publisher && `, ${source.publisher}`}
-                    {source.accessed && ` (accessed ${formatWib(`${source.accessed}T00:00:00+07:00`, 'date')})`}
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-        </article>
+        <ArticleView
+          linked={false}
+          dateLine={dateLine}
+          article={{
+            title: view.title,
+            standfirst: view.standfirst,
+            type: view.type,
+            kicker: view.kicker,
+            isBreaking: view.isBreaking,
+            section: section ? { name: section.name, slug: section.slug } : null,
+            authors: byline.map((author) => ({ name: author.name, slug: '', role: author.role, photo: image(author.photo_media_id) })),
+            publishedAt: published ? article.published_at : null,
+            updatedAt: article.major_update_at,
+            readingMinutes: readingMinutes(wordCount(docText(view.body))),
+            lead: image(view.leadMediaId),
+            leadCaption: view.leadCaption,
+            body: view.body,
+            links,
+            media,
+            sources: view.sources,
+            tags: view.tagIds.map((tagId) => tags.find((tag) => tag.id === tagId)).filter((tag) => tag !== undefined),
+          }}
+        />
       </main>
     </div>
   );

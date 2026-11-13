@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { THEME_SCRIPT } from '@/components/site/theme';
 import { siteUrl } from '@/lib/env';
 import { newsreader, plexMono, plexSans } from './fonts';
 import '@/styles/tokens.css';
@@ -22,7 +23,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${newsreader.variable} ${plexSans.variable} ${plexMono.variable}`}>
+    // The theme script may set data-theme before React hydrates, hence suppressHydrationWarning.
+    <html lang="en" className={`${newsreader.variable} ${plexSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

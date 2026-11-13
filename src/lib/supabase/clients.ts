@@ -13,8 +13,15 @@ const NO_SESSION = { persistSession: false, autoRefreshToken: false, detectSessi
  */
 export function createPublicClient() {
   const { supabaseUrl, publishableKey } = publicEnv();
-  return createClient(supabaseUrl, publishableKey, { auth: NO_SESSION });
+  return createClient(supabaseUrl, publishableKey, { auth: NO_SESSION, global: { fetch: uncachedFetch } });
 }
+
+/**
+ * The site caches whole reads with 'use cache' and tags (src/modules/site/queries.ts). Next.js would otherwise
+ * also keep the raw responses in its fetch cache, untagged, so a dropped tag would re-run the read and get
+ * the old response back.
+ */
+const uncachedFetch: typeof fetch = (input, init) => fetch(input, { ...init, cache: 'no-store' });
 
 /**
  * The signed-in Newsroom user's client (`authenticated` role), with the session kept in cookies.
