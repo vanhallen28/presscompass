@@ -71,25 +71,54 @@ export async function seedMedia(alt = 'Farmers plant rice seedlings in a flooded
   return media.id;
 }
 
+/** The address part the Newsroom makes from a headline. */
+export const slugFor = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
 /** An article straight in the database; `ready` fills everything publishing needs (including a lead image with alt text). */
-export async function seedArticle(options: { title: string; sectionId?: string; authorId?: string; ready?: boolean; status?: string }) {
-  const slug = options.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+export async function seedArticle(options: {
+  title: string;
+  sectionId?: string;
+  authorId?: string;
+  tagId?: string;
+  ready?: boolean;
+  status?: string;
+  body?: unknown;
+  scheduledAt?: Date;
+  publishedAt?: Date;
+}) {
   const leadMediaId = options.ready ? await seedMedia() : null;
   const [article] = await sql<{ id: string }>(
-    `insert into public.articles (title, slug, section_id, standfirst, body, body_text, word_count, status, published_at, lead_media_id)
-     values ($1, $2, $3, $4, $5, $6, $7, $8::public.article_status, case when $8::text = 'published' then now() else null end, $9) returning id`,
+    `insert into public.articles (title, slug, section_id, standfirst, body, body_text, word_count, status, published_at, scheduled_at, lead_media_id)
+     values ($1, $2, $3, $4, $5, $6, $7, $8::public.article_status,
+             case when $8::text = 'published' then coalesce($10, now()) else null end, $11, $9) returning id`,
     [
       options.title,
-      slug,
+      slugFor(options.title),
       options.sectionId ?? null,
       options.ready ? 'Why it matters for households.' : '',
-      JSON.stringify(options.ready ? READY_BODY : { type: 'doc', content: [] }),
+      JSON.stringify(options.body ?? (options.ready ? READY_BODY : { type: 'doc', content: [] })),
       '',
       options.ready ? 160 : 0,
       options.status ?? 'draft',
       leadMediaId,
+      options.publishedAt ?? null,
+      options.scheduledAt ?? null,
     ],
   );
   if (options.authorId) await sql(`insert into public.article_authors (article_id, author_id) values ($1, $2)`, [article.id, options.authorId]);
+  if (options.tagId) await sql(`insert into public.article_tags (article_id, tag_id) values ($1, $2)`, [article.id, options.tagId]);
   return article.id;
+}
+
+// Same value as CRON_SECRET in playwright.config.ts.
+export const CRON_SECRET = 'e2e-cron-secret-that-is-long-enough-1234';
+
+/** Drops cached site pages after seeding with SQL (the Newsroom does this itself). */
+export async function revalidateSite(tags = ['site']) {
+  const response = await fetch('http://localhost:3100/api/revalidate', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${CRON_SECRET}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ tags }),
+  });
+  expect(response.status).toBe(200);
 }

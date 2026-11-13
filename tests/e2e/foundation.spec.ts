@@ -4,11 +4,11 @@ import { expect, test } from '@playwright/test';
 // Password the fake Supabase accepts (tests/fake-supabase/auth.mjs).
 const PASSWORD = 'correct-horse-battery-staple';
 
-test.describe('holding page', () => {
-  test('shows the logo and tagline, stays out of search engines', async ({ page }) => {
+test.describe('site basics', () => {
+  test('shows the masthead, stays out of search engines until launch', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('img', { name: 'PressCompass' })).toBeVisible();
-    await expect(page.getByText('News with a sense of direction.')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'PressCompass home' })).toBeVisible();
+    await expect(page).toHaveTitle('PressCompass · News with a sense of direction');
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
