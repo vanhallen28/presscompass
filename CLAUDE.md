@@ -77,7 +77,7 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - Ad and tracking code lives in `ad_settings` / `ad_slots` (staff only); the site reads `site_ads()`, which returns code only
   while ads are on (verification tags and ads.txt lines always). Validation in `src/modules/ads/validate.ts`.
 - Nothing from Google, Meta or other networks loads before consent: `src/components/site/ads/consent.ts` (early script in
-  the root layout `<head>`, never in a nested layout: React does not run scripts it creates on the client, `html[data-consent]`), `loader.ts` (`whenConsented`), `AdRuntime` (site-wide scripts), `AdFill` (one slot, when visible).
+  the root layout `<head>` through `InlineScript`, never in a nested layout: React does not run scripts it creates on the client, `html[data-consent]`), `loader.ts` (`whenConsented`), `AdRuntime` (site-wide scripts), `AdFill` (one slot, when visible).
   The server never reads the consent cookie, so pages stay static.
 - Slots are fixed placements rendered by `AdSlot` with a reserved height. No ads on static pages (`slots={false}`), the 404
   page, or the Newsroom preview.
@@ -96,6 +96,9 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
   signed upload, idempotent by slug and public ID). Facts must come from the listed sources, dated, neutral on politics.
 - `tests/unit/starter.test.ts` checks every file against `sanitizeDoc` and the word count in `src/lib/doc/text.ts`; keep the
   parser in step with the schema when blocks change.
+- `scripts/lib/setup.mjs` holds the checks shared by `npm run check` and the importer (env values, Supabase + migrations,
+  Cloudinary keys via a signed Admin API read, content counts, refreshing a running site). The importer checks everything
+  and uploads images before writing any row.
 
 ## Tests (all without Docker)
 

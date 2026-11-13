@@ -1,5 +1,16 @@
 # Riwayat versi
 
+## v0.5.2 · 13 November 2026 · Konten lengkap dan pemeriksa setup
+
+- **18 artikel awal** (sebelumnya 10), tiga di setiap rubrik, masing-masing dengan ilustrasi sendiri. Baru: mudik Lebaran 2026, HUT ke-81 RI, cara memilih presiden (dengan Chart hasil 2024), Timor-Leste anggota ke-11 ASEAN, Laut Natuna Utara, Whoosh dan utangnya, populasi komodo, inflasi 2020–2025 (dengan Chart).
+- **`npm run content:starter` lebih aman:**
+  - memeriksa `.env`, Supabase, dan kunci Cloudinary **sebelum menulis apa pun**, lalu mengunggah gambar dulu, jadi kesalahan kunci tidak lagi meninggalkan rubrik tanpa artikel;
+  - `-- --email alamat@anda` mengisi email kontak dan menerbitkan halaman About, Contact, Privacy policy (halaman yang sudah Anda ubah di Newsroom tidak disentuh);
+  - menyegarkan situs yang sedang berjalan (`npm run dev`) bila `CRON_SECRET` dan `NEXT_PUBLIC_SITE_URL` ada di `.env`, lalu melaporkan jumlah artikel dan halaman yang tampil.
+- **`npm run check`** (baru): memeriksa isi `.env`, koneksi Supabase dan migrasi, kunci Cloudinary, pengguna Newsroom, serta artikel dan halaman yang sudah terbit, dan menyebut cara memperbaiki yang belum benar. Tidak mengubah apa pun.
+- **Perbaikan:** logo di footer tidak terlihat dalam mode gelap; peringatan "Encountered a script tag" di halaman 404 saat `npm run dev`.
+- Tidak ada migrasi baru. Tes: 147 unit, 48 database, 64 E2E.
+
 ## v0.5.1 · 13 November 2026 · Perbaikan `npm run dev`
 
 - **Galat "A "use cache" function is awaiting a promise created outside it" di beranda** (`npm run dev`): muncul bila satu permintaan ke Supabase tidak dijawab lebih dari 10 detik (koneksi tersendat). Bacaan situs kini menunggu paling lama 3 detik, lalu mencoba sekali lagi (5,5 detik); bila Supabase tetap diam, pesannya jelas: "Supabase did not answer within 8.5 seconds".
