@@ -16,7 +16,7 @@ Media berita berbahasa Inggris tentang Indonesia di presscompass.site, lengkap d
 | `npm run db:link -- --project-ref KODE` | menautkan folder ini ke proyek Supabase (meminta password database) |
 | `npm run db:push` | menerapkan migrasi baru ke proyek Supabase yang ditautkan |
 | `npm run staff:grant -- email@anda.com` | memberi akses Newsroom ke pengguna Supabase |
-| `npm run content:starter` | memasang 10 artikel awal beserta ilustrasinya (Cloudinary); aman dijalankan ulang |
+| `npm run content:starter` | memasang 10 artikel awal beserta ilustrasinya (Cloudinary) dan draf About, Contact, Privacy policy; aman dijalankan ulang |
 
 Langkah pemasangan lengkap: `docs/ops/setup.md`. Memasang versi baru: `docs/ops/update.md`. Riwayat versi: `CHANGELOG.md`.
 
@@ -27,6 +27,11 @@ Langkah pemasangan lengkap: `docs/ops/setup.md`. Memasang versi baru: `docs/ops/
 - Header dengan tanggal (WIB), menu, navigasi rubrik, pita Latest (24 jam terakhir); footer navy dengan sakelar tema Auto, Light, Dark.
 - Halaman disimpan di cache dan diperbarui sendiri setelah perubahan di Newsroom. Artikel terjadwal terbit lewat `/api/cron/run` (Vercel Cron harian, Supabase Cron 5 menit: `docs/ops/setup.md` langkah F).
 - Situs masih `noindex` sampai rilis (Rencana 8).
+
+## Iklan dan halaman (v0.5.0)
+
+- **Ads** di Newsroom: AdSense (Auto ads dan unit), Google Ad Manager, Meta Pixel, kode jaringan lain, tag verifikasi, `ads.txt`, 8 slot tetap, banner persetujuan cookie. Sakelar utama mati sampai Vercel Pro (Hobby hanya non-komersial). Panduan: `docs/ops/setup.md` langkah H.
+- **Pages** di Newsroom: halaman statis (About, Contact, Privacy policy) di `/{alamat}` dan di footer.
 
 ## Konten awal (v0.4.1)
 

@@ -66,12 +66,30 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - `createPublicClient` fetches with `cache: 'no-store'`; only the tagged `'use cache'` layer may cache site data.
 - Dynamic site routes export `generateStaticParams` (`src/modules/site/params.ts`) and `instant = false`, and await
   params at the top, so a cached 404 or redirect keeps its status. Use `missing(path)` for anything not found.
-- Client JavaScript on the site only for the theme switch and share buttons; the menu is a `popover`, search a GET form.
+- Client JavaScript on the site only for the theme switch, share buttons, and (while ads are on) the consent banner and ad
+  loaders; the menu is a `popover`, search a GET form.
 - System endpoints (`/api/cron/run`, `/api/revalidate`) check `CRON_SECRET` with `checkCronAuth`.
+
+## Ads and consent
+
+- Ad and tracking code lives in `ad_settings` / `ad_slots` (staff only); the site reads `site_ads()`, which returns code only
+  while ads are on (verification tags and ads.txt lines always). Validation in `src/modules/ads/validate.ts`.
+- Nothing from Google, Meta or other networks loads before consent: `src/components/site/ads/consent.ts` (early script,
+  `html[data-consent]`), `loader.ts` (`whenConsented`), `AdRuntime` (site-wide scripts), `AdFill` (one slot, when visible).
+  The server never reads the consent cookie, so pages stay static.
+- Slots are fixed placements rendered by `AdSlot` with a reserved height. No ads on static pages (`slots={false}`), the 404
+  page, or the Newsroom preview.
+- Vercel Hobby is non-commercial: the master switch stays off by default and the Ads page says so.
+- E2E for ads runs in the Playwright project `ads`, after all other projects, with Google and Meta domains stubbed.
+
+## Static pages
+
+- `pages.blocks` holds `[{ "type": "text", "body": <doc> }]`; `site_page()` / `site_pages()` read them. `[section]/page.tsx`
+  falls back to a page when no section has the address; sections and pages may not share an address.
 
 ## Starter content
 
-- `content/starter/articles/*.md` (front matter + a narrow Markdown dialect, parsed by `scripts/starter/parse.mjs`) and
+- `content/starter/articles/*.md` and `content/starter/pages/*.md` (front matter + a narrow Markdown dialect, parsed by `scripts/starter/parse.mjs`) and
   `content/starter/images/*.jpg` are loaded by `npm run content:starter` (`scripts/content-starter.mjs`, secret key + Cloudinary
   signed upload, idempotent by slug and public ID). Facts must come from the listed sources, dated, neutral on politics.
 - `tests/unit/starter.test.ts` checks every file against `sanitizeDoc` and the word count in `src/lib/doc/text.ts`; keep the

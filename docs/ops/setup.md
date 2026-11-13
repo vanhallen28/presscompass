@@ -159,6 +159,22 @@ npm run content:starter
 **Hasil yang diharapkan:** daftar `Published: ...` dan baris `10 of 10 starter articles added.` Lalu push ke GitHub supaya deploy berikutnya memuatnya.
 Untuk memeriksa dulu di Newsroom: `npm run content:starter -- --draft`, lalu terbitkan dari **Articles**.
 
+## H. Iklan: AdSense, Ad Manager, Meta Pixel, jaringan lain
+
+Semua diisi di Newsroom, **Site, Ads**. Iklan baru tampil setelah sakelar **Show ads and run tracking code on the site** dinyalakan, dan sakelar itu hanya boleh dinyalakan setelah proyek Vercel pindah ke **Pro**: aturan Fair Use Vercel menyebut Hobby hanya untuk penggunaan non-komersial, dan iklan (termasuk AdSense) termasuk komersial.
+
+1. **Halaman wajib.** Di **Pages**, lengkapi dan terbitkan **Privacy policy**, **About**, dan **Contact** (drafnya dari `npm run content:starter`). Ganti `[add your contact email here]` dengan email Anda. Teks Privacy policy sudah sesuai perilaku situs, tetapi itu tanggung jawab Anda; periksa sebelum terbit.
+2. **Ads, Consent:** isi **Privacy policy link** `/privacy-policy`. Biarkan **Ask readers before loading ads and tracking code** menyala.
+3. **Daftar AdSense** (https://adsense.google.com) dengan alamat `presscompass.site`. Isi **Publisher ID** (`ca-pub-...`, dari AdSense: Account, Settings, Account information) di Ads, lalu Save. Sakelar tetap mati: tag `google-adsense-account` dan `https://presscompass.site/ads.txt` langsung terpasang, jadi pilih verifikasi lewat **meta tag** atau **ads.txt** di AdSense. Status ads.txt di AdSense (Sites) harus **Authorized**. Persetujuan situs biasanya butuh beberapa hari sampai minggu.
+4. **Iklan di wilayah EEA, Inggris, Swiss:** di AdSense, **Privacy & messaging, European regulations**, buat dan terbitkan pesan untuk presscompass.site (CMP Google, gratis). Tanpa itu, pembaca di sana hanya mendapat iklan terbatas.
+5. **Unit iklan:** di AdSense **Ads, By ad unit**, buat unit (Display, In-feed, In-article, atau Multiplex). Di Newsroom, buka slot di tabel **Ad slots**, pilih **Google AdSense unit**, jenis yang sama, tempel angka `data-ad-slot` (untuk In-feed juga `data-ad-layout-key`), atur tinggi slot sesuai ukuran unit, centang **Show this slot**, Save. **Auto ads** (iklan yang ditaruh Google sendiri) dinyalakan lewat kotak **Load AdSense on every page for Auto ads** dan diatur di AdSense **Ads, By site**.
+6. **Google Ad Manager:** di slot pilih **Google Ad Manager (GPT)**, isi path unit (`/kode-jaringan/nama-unit`, dari Ad Manager: Inventory, Ad units, Tags) dan ukuran (`300x250, 336x280`).
+7. **Jaringan lain** (Adsterra, Media.net, PropellerAds, dan sejenisnya): kode banner ke slot (**Code from another network**); kode yang diminta di `<head>` atau sebelum `</body>` ke **Other code**; tag `<meta>` verifikasi mereka ke **Verification tags**; baris ads.txt mereka ke **ads.txt, Other lines**.
+8. **Meta Pixel:** isi **Pixel ID** (Meta Events Manager, Data sources).
+9. **Menyalakan:** setelah pindah ke Vercel Pro, centang **Show ads and run tracking code on the site**, Save. Buka situs di jendela penyamaran: banner muncul; setelah **Accept all**, slot terisi.
+
+Mematikan: hapus centang sakelar, Save. Slot, banner, dan semua kode hilang dari situs dalam beberapa detik; tag verifikasi dan `ads.txt` tetap.
+
 ## Bila ada masalah
 
 | Gejala | Penyebab dan jalan keluar |
@@ -176,4 +192,7 @@ Untuk memeriksa dulu di Newsroom: `npm run content:starter -- --draft`, lalu ter
 | Build Vercel gagal dengan pesan `site_list:` atau `sections:` | build membaca Supabase untuk menyiapkan halaman; proyek Supabase dijeda atau tidak terjangkau. Pulihkan proyek (Supabase, Restore), lalu Redeploy. Deploy lama tetap tayang |
 | `content:starter`: "Cloudinary did not take ...: Invalid Signature" | API key atau secret Cloudinary di `.env` salah; salin ulang (langkah E) |
 | `content:starter`: "This Supabase project is not set up for PressCompass" | kunci di `.env` milik proyek lain, atau `npm run db:push` belum dijalankan |
+| Ads: "Add the privacy policy link (under Consent) before turning ads on" | isi Privacy policy link (langkah H2), lalu Save lagi |
+| AdSense menulis ads.txt "Not found" atau "Unauthorized" | buka `https://presscompass.site/ads.txt`: barisnya harus memuat `pub-` dengan angka yang sama dengan ID penerbit; simpan Ads lagi bila perlu, tunggu AdSense memeriksa ulang (bisa sampai beberapa hari) |
+| Slot tampil kosong setelah Accept all | unit AdSense baru atau situs belum disetujui (AdSense mengisi setelah disetujui), atau angka `data-ad-slot` salah |
 | Deploy Vercel diblokir: commit author tidak punya akses | perintah pasang selalu memuat `git commit --amend --no-edit --reset-author` sebelum push; jalankan lalu push lagi |
