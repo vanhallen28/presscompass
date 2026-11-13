@@ -9,6 +9,7 @@ import { cloudinaryConfig, destroyAsset, FOLDER, fetchResource, type UploadPlan,
 import { listMedia, mediaUsage } from './queries';
 import { MEDIA_COLUMNS, type MediaItem, type MediaRow, toMediaItem } from './types';
 import { checkFile, type MediaDetails, parseMediaDetails } from './validate';
+import { refreshSite } from '@/modules/site/invalidate';
 
 // Server Actions for media. Uploads go browser → Cloudinary directly; the server signs the request
 // first and checks the result with the Admin API afterwards, so only real uploads are recorded.
@@ -76,6 +77,8 @@ export async function saveMediaDetails(id: string, details: Partial<MediaDetails
   const supabase = await createSessionClient();
   const { data, error } = await supabase.from('media').update(values).eq('id', id).select(MEDIA_COLUMNS).single();
   if (error || !data) return { ok: false, error: `The details could not be saved. ${error?.message ?? ''}` };
+  // Alt text and credit show wherever the image is used on the site.
+  refreshSite();
   return { ok: true, media: toMediaItem(data as MediaRow) };
 }
 

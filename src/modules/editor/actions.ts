@@ -9,6 +9,7 @@ import { createSessionClient } from '@/lib/supabase/clients';
 import { formatWib } from '@/lib/time';
 import { requireStaff } from '@/modules/auth/staff';
 import { mediaByIds } from '@/modules/media/queries';
+import { refreshArticles } from '@/modules/site/invalidate';
 import { type FieldErrors, parseArticleInput } from './input';
 import { type ArticleListRow, getRevision, listArticles } from './queries';
 import { publishProblems } from './rules';
@@ -91,6 +92,8 @@ export async function saveArticle(raw: unknown, intent: Intent): Promise<SaveRes
     return { ok: false, message: `The article could not be saved. ${error.message}` };
   }
   const saved = data as { version: number; slug: string; status: ArticleStatus; published_at: string | null; scheduled_at: string | null; updated_at: string };
+  // Readers only see published articles: refresh the site when this one is, or just stopped being, published.
+  if (saved.status === 'published' || (current as { status: ArticleStatus }).status === 'published') refreshArticles([input.value.id]);
   return {
     ok: true,
     version: saved.version,
@@ -173,6 +176,7 @@ export async function bulkArticles(_prev: BulkState, form: FormData): Promise<Bu
     const { data, error } = await supabase.rpc('set_article_status', { p_ids: ready, p_action: action });
     if (error) return { tone: 'error', message: `Nothing changed. ${error.message}` };
     moved = Number(data ?? 0);
+    if (moved) refreshArticles(ready);
   }
   refresh();
   return {
@@ -213,6 +217,7 @@ export async function restoreRevision(form: FormData) {
     p_revision: `Restored the version from ${formatWib(revision.created_at)} WIB`,
   });
   if (error) redirect(`/newsroom/articles/${articleId}/history?notice=restore-failed`);
+  refreshArticles([articleId]);
   redirect(`/newsroom/articles/${articleId}?notice=restored`);
 }
 

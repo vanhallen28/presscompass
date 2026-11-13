@@ -14,6 +14,8 @@ const E2E_ENV = {
   CLOUDINARY_API_URL: `http://127.0.0.1:${MOCK_SUPABASE_PORT}/fake-cloudinary`,
   CLOUDINARY_API_KEY: 'fake-key',
   CLOUDINARY_API_SECRET: 'fake-secret',
+  // Lets the tests call /api/cron/run and /api/revalidate (data seeded with SQL bypasses the Newsroom).
+  CRON_SECRET: 'e2e-cron-secret-that-is-long-enough-1234',
 };
 
 export default defineConfig({

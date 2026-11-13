@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { UUID } from '@/lib/doc/schema';
 import { createSessionClient } from '@/lib/supabase/clients';
 import { requireStaff } from '@/modules/auth/staff';
+import { refreshSite } from '@/modules/site/invalidate';
 import { type Errors, parseAuthor, parseSection, parseTag } from './validate';
 
 // Server Actions for Sections, Tags and Authors. Each one checks the session itself.
@@ -35,6 +36,7 @@ async function store(kind: Kind, id: string | null, row: Record<string, unknown>
   }
   if (error?.code === '23505') return { errors: { slug: `Another ${kind} already uses this address.` }, values };
   if (error) return { errors: {}, values, message: `The ${kind} could not be saved. ${error.message}` };
+  refreshSite();
   redirect(`${LIST[kind]}?notice=${id ? 'updated' : 'created'}`);
 }
 
@@ -70,6 +72,7 @@ async function remove(kind: Kind, form: FormData) {
   const supabase = await createSessionClient();
   const { error } = await supabase.from(TABLE[kind]).delete().eq('id', id);
   if (error) redirect(`${LIST[kind]}/${id}?notice=${error.code === '23503' ? 'in-use' : 'failed'}`);
+  refreshSite();
   redirect(`${LIST[kind]}?notice=deleted`);
 }
 
@@ -102,5 +105,6 @@ export async function moveSection(form: FormData) {
   for (const [position, sectionId] of order.entries()) {
     if (current.get(sectionId) !== position) await supabase.from('sections').update({ position }).eq('id', sectionId);
   }
+  refreshSite();
   refresh();
 }
