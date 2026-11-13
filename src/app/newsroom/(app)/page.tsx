@@ -30,7 +30,6 @@ async function databaseCheck(): Promise<{ ok: boolean; detail: string }> {
 }
 
 const NEXT_STEPS = [
-  ['v0.4.0', 'Public site'],
   ['v0.5.0', 'Homepage, navigation, pages and site settings'],
   ['v0.6.0', 'SEO tools'],
   ['v0.7.0', 'Automatic indexing and the SEO dashboard'],

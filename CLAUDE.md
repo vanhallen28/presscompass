@@ -55,6 +55,20 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - Deleting removes the row first, then the Cloudinary asset, and only when `media_usage()` is empty.
 - E2E uses the fake Cloudinary in `tests/fake-supabase/cloudinary.mjs` (same signatures, Admin API, delivery).
 
+## Public site
+
+- Pages live in `src/app/(site)/` and render through `SitePage` (header, main, footer). Pass a `page` key unique to
+  the page: Next keeps visited pages in the DOM, so element ids (menu popover, skip link target) include it.
+- Reads go through the `site_*` SQL functions (published and due only) in `src/modules/site/queries.ts`, each
+  `'use cache'` + `cacheLife('hours')` + tags from `src/modules/site/cache.ts`. Do not query tables from pages.
+- Anything in the Newsroom that changes what readers see calls `refreshArticles(ids)` or `refreshSite()`
+  (`src/modules/site/invalidate.ts`). Never `updateTag` there: it re-renders the Newsroom page and remounts the editor.
+- `createPublicClient` fetches with `cache: 'no-store'`; only the tagged `'use cache'` layer may cache site data.
+- Dynamic site routes export `generateStaticParams` (`src/modules/site/params.ts`) and `instant = false`, and await
+  params at the top, so a cached 404 or redirect keeps its status. Use `missing(path)` for anything not found.
+- Client JavaScript on the site only for the theme switch and share buttons; the menu is a `popover`, search a GET form.
+- System endpoints (`/api/cron/run`, `/api/revalidate`) check `CRON_SECRET` with `checkCronAuth`.
+
 ## Tests (all without Docker)
 
 - `npm test`: unit (Vitest).
@@ -65,6 +79,7 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
   Locally you can use an installed Chrome: `PW_CHROME_PATH=/usr/bin/google-chrome`.
 - Locators for alerts are scoped to `main`: Next.js renders its own route announcer with `role="alert"`.
 - E2E locators use roles (`getByRole`), not `getByLabel`: hidden, kept-alive pages still match labels.
+- E2E that seeds articles with SQL must call `revalidateSite()` (tests/e2e/helpers.ts) before visiting the site.
 - `npm run fake:supabase` plus `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:3101 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_dev npm run dev`
   runs the site against the fake Supabase for local checks (user `owner@example.com`, password in `tests/fake-supabase/auth.mjs`).
 

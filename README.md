@@ -19,9 +19,17 @@ Media berita berbahasa Inggris tentang Indonesia di presscompass.site, lengkap d
 
 Langkah pemasangan lengkap: `docs/ops/setup.md`. Memasang versi baru: `docs/ops/update.md`. Riwayat versi: `CHANGELOG.md`.
 
-## Newsroom (v0.3.0)
+## Situs publik (v0.4.0)
 
-- **Articles:** daftar dengan tab status, cari, filter, aksi massal; editor blok dengan autosave, jadwal (WIB), riwayat versi, dan pratinjau. Gambar utama dan blok gambar dengan keterangan.
+- **Beranda** otomatis: lead dan Top stories, satu baris per rubrik di navigasi, Opinion.
+- **Artikel** `/{rubrik}/{slug}` dengan byline, gambar utama, isi (termasuk Chart), sumber, tag, Related, dan More from; **rubrik**, **penulis** `/author/{slug}`, **tag** `/tag/{slug}` (24 artikel per halaman, `/page/2` dan seterusnya), **cari** `/search`, dan halaman 404.
+- Header dengan tanggal (WIB), menu, navigasi rubrik, pita Latest (24 jam terakhir); footer navy dengan sakelar tema Auto, Light, Dark.
+- Halaman disimpan di cache dan diperbarui sendiri setelah perubahan di Newsroom. Artikel terjadwal terbit lewat `/api/cron/run` (Vercel Cron harian, Supabase Cron 5 menit: `docs/ops/setup.md` langkah F).
+- Situs masih `noindex` sampai rilis (Rencana 8).
+
+## Newsroom (v0.4.0)
+
+- **Articles:** daftar dengan tab status, cari, filter, aksi massal; editor blok dengan autosave, jadwal (WIB), riwayat versi, dan pratinjau yang sama persis dengan halaman situs. Gambar utama, blok gambar, dan blok Chart (tempel tabel dari spreadsheet).
 - **Media:** pustaka gambar di Cloudinary (unggah, alt text, kredit, dipakai di mana, hapus). Artikel hanya bisa terbit bila gambar utama dan semua gambarnya punya alt text.
 - **Sections, Tags, Authors:** dibuat dan diubah di Newsroom, termasuk foto penulis; alamat lama otomatis dialihkan (308) bila alamat yang sudah terbit berubah.
 - **Dashboard:** jumlah artikel per status, artikel terbaru, dan status database serta Cloudinary.
