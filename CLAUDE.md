@@ -63,7 +63,9 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
   `'use cache'` + `cacheLife('hours')` + tags from `src/modules/site/cache.ts`. Do not query tables from pages.
 - Anything in the Newsroom that changes what readers see calls `refreshArticles(ids)` or `refreshSite()`
   (`src/modules/site/invalidate.ts`). Never `updateTag` there: it re-renders the Newsroom page and remounts the editor.
-- `createPublicClient` fetches with `cache: 'no-store'`; only the tagged `'use cache'` layer may cache site data.
+- `createPublicClient` fetches with `cache: 'no-store'` (`src/lib/supabase/read-fetch.ts`): only the tagged `'use cache'` layer
+  may cache site data. Each read gets 3 s, then one retry of 5.5 s, so a stalled request never reaches `next dev`'s 10 s
+  hang probe (which reports it as a misleading "awaiting a promise created outside it" deadlock).
 - Dynamic site routes export `generateStaticParams` (`src/modules/site/params.ts`) and `instant = false`, and await
   params at the top, so a cached 404 or redirect keeps its status. Use `missing(path)` for anything not found.
 - Client JavaScript on the site only for the theme switch, share buttons, and (while ads are on) the consent banner and ad
@@ -74,8 +76,8 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 
 - Ad and tracking code lives in `ad_settings` / `ad_slots` (staff only); the site reads `site_ads()`, which returns code only
   while ads are on (verification tags and ads.txt lines always). Validation in `src/modules/ads/validate.ts`.
-- Nothing from Google, Meta or other networks loads before consent: `src/components/site/ads/consent.ts` (early script,
-  `html[data-consent]`), `loader.ts` (`whenConsented`), `AdRuntime` (site-wide scripts), `AdFill` (one slot, when visible).
+- Nothing from Google, Meta or other networks loads before consent: `src/components/site/ads/consent.ts` (early script in
+  the root layout `<head>`, never in a nested layout: React does not run scripts it creates on the client, `html[data-consent]`), `loader.ts` (`whenConsented`), `AdRuntime` (site-wide scripts), `AdFill` (one slot, when visible).
   The server never reads the consent cookie, so pages stay static.
 - Slots are fixed placements rendered by `AdSlot` with a reserved height. No ads on static pages (`slots={false}`), the 404
   page, or the Newsroom preview.

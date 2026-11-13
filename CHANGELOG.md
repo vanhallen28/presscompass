@@ -1,5 +1,11 @@
 # Riwayat versi
 
+## v0.5.1 · 13 November 2026 · Perbaikan `npm run dev`
+
+- **Galat "A "use cache" function is awaiting a promise created outside it" di beranda** (`npm run dev`): muncul bila satu permintaan ke Supabase tidak dijawab lebih dari 10 detik (koneksi tersendat). Bacaan situs kini menunggu paling lama 3 detik, lalu mencoba sekali lagi (5,5 detik); bila Supabase tetap diam, pesannya jelas: "Supabase did not answer within 8.5 seconds".
+- **Galat "Encountered a script tag while rendering React component"**: akibat galat di atas (React menggambar ulang halaman di browser). Skrip awal persetujuan cookie juga dipindah ke `<head>` layout utama, supaya tidak muncul saat berpindah dari Newsroom ke situs.
+- Tidak ada migrasi baru. Tes: 131 unit, 48 database, 64 E2E.
+
 ## v0.5.0 · 13 November 2026 · Iklan dan halaman statis (Rencana 5)
 
 - **Ads** (menu baru Site, Ads di Newsroom), satu tempat untuk semua kode iklan dan pelacakan:

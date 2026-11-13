@@ -195,4 +195,5 @@ Mematikan: hapus centang sakelar, Save. Slot, banner, dan semua kode hilang dari
 | Ads: "Add the privacy policy link (under Consent) before turning ads on" | isi Privacy policy link (langkah H2), lalu Save lagi |
 | AdSense menulis ads.txt "Not found" atau "Unauthorized" | buka `https://presscompass.site/ads.txt`: barisnya harus memuat `pub-` dengan angka yang sama dengan ID penerbit; simpan Ads lagi bila perlu, tunggu AdSense memeriksa ulang (bisa sampai beberapa hari) |
 | Slot tampil kosong setelah Accept all | unit AdSense baru atau situs belum disetujui (AdSense mengisi setelah disetujui), atau angka `data-ad-slot` salah |
+| `npm run dev`: "Supabase did not answer within 8.5 seconds" | koneksi ke Supabase tersendat atau proyek sedang dijeda/dipulihkan (Supabase Free menjeda proyek setelah 7 hari tanpa aktivitas): buka dashboard Supabase, pastikan proyek aktif, lalu muat ulang halaman |
 | Deploy Vercel diblokir: commit author tidak punya akses | perintah pasang selalu memuat `git commit --amend --no-edit --reset-author` sebelum push; jalankan lalu push lagi |
