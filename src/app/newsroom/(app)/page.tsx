@@ -10,6 +10,7 @@ import { formatWib, wibDayStart } from '@/lib/time';
 import { requireStaff } from '@/modules/auth/staff';
 import { createArticle } from '@/modules/editor/actions';
 import { getDashboard, listArticles, publishDue } from '@/modules/editor/queries';
+import { uploadsReady } from '@/modules/media/queries';
 import styles from './newsroom.module.css';
 
 export const metadata: Metadata = { title: 'Dashboard' };
@@ -29,7 +30,6 @@ async function databaseCheck(): Promise<{ ok: boolean; detail: string }> {
 }
 
 const NEXT_STEPS = [
-  ['v0.3.0', 'Media library on Cloudinary, lead images and image blocks'],
   ['v0.4.0', 'Public site'],
   ['v0.5.0', 'Homepage, navigation, pages and site settings'],
   ['v0.6.0', 'SEO tools'],
@@ -42,6 +42,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const [stats, recent, database] = await Promise.all([getDashboard(wibDayStart(now)), listArticles({ limit: 6 }), databaseCheck()]);
   const environment = deployEnv();
+  const mediaReady = uploadsReady();
 
   const cards: { label: string; icon: IconName; value: number; note: string; href: string }[] = [
     { label: 'Published today', icon: 'check', value: stats.published_today, note: formatWib(now, 'date'), href: '/newsroom/articles?status=published' },
@@ -116,6 +117,19 @@ export default async function DashboardPage() {
                 <Icon name={database.ok ? 'check' : 'alert'} size={16} className={database.ok ? styles.ok : styles.bad} />
                 <span>
                   <b>Database</b> {database.detail}
+                </span>
+              </li>
+              <li>
+                <Icon name={mediaReady ? 'check' : 'alert'} size={16} className={mediaReady ? styles.ok : styles.bad} />
+                <span>
+                  <b>Media</b>{' '}
+                  {mediaReady ? (
+                    'Cloudinary connected.'
+                  ) : (
+                    <>
+                      Cloudinary is not connected. <Link href="/newsroom/media">See how</Link>.
+                    </>
+                  )}
                 </span>
               </li>
               <li>

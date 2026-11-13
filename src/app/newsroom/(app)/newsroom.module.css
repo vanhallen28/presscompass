@@ -225,6 +225,12 @@
   margin-top: 3px;
 }
 
+.checks a {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .checks b {
   color: var(--ink);
   font-weight: 600;

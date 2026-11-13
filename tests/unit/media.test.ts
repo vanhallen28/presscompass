@@ -60,7 +60,7 @@ describe('Admin API', () => {
   });
 
   it('deletes an image with a signed request that also clears the CDN', async () => {
-    const fetcher = vi.fn(async (_url: string, _init: RequestInit) => Response.json({ result: 'ok' }));
+    const fetcher = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(async () => Response.json({ result: 'ok' }));
     await expect(destroyAsset(config, ID, 1793744000, fetcher)).resolves.toBe(true);
     const [url, init] = fetcher.mock.calls[0];
     expect(url).toBe('https://api.cloudinary.com/v1_1/demo/image/destroy');

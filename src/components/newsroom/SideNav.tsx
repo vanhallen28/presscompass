@@ -13,6 +13,7 @@ const GROUPS: { label?: string; links: { href: string; label: string; icon: Icon
       { href: '/newsroom/sections', label: 'Sections', icon: 'folder' },
       { href: '/newsroom/tags', label: 'Tags', icon: 'tag' },
       { href: '/newsroom/authors', label: 'Authors', icon: 'users' },
+      { href: '/newsroom/media', label: 'Media', icon: 'image' },
     ],
   },
 ];
