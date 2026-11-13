@@ -185,7 +185,8 @@ async function readTable(pool, req, table, params) {
 async function insertRows(pool, cache, req, table, params, body) {
   const rows = Array.isArray(body) ? body : [body];
   const types = await columnTypes(pool, cache, table);
-  const columns = params.get('columns') ? params.get('columns').split(',') : [...new Set(rows.flatMap((row) => Object.keys(row)))];
+  // supabase-js sends `columns` for multi-row inserts, each name in double quotes.
+  const columns = params.get('columns') ? params.get('columns').split(',').map((column) => column.trim().replace(/^"(.*)"$/, '$1')) : [...new Set(rows.flatMap((row) => Object.keys(row)))];
   const values = [];
   const tuples = rows.map(
     (row) =>

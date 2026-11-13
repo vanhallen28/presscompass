@@ -1,6 +1,6 @@
 {
   "name": "presscompass",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "engines": {
     "node": "26.x"
@@ -19,7 +19,8 @@
     "db:link": "npx -y supabase@3.1.0 link",
     "db:push": "npx -y supabase@3.1.0 db push --remote",
     "fake:supabase": "node tests/fake-supabase/server.mjs",
-    "staff:grant": "node --env-file=.env scripts/grant-staff.mjs"
+    "staff:grant": "node --env-file=.env scripts/grant-staff.mjs",
+    "content:starter": "node --env-file=.env scripts/content-starter.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
