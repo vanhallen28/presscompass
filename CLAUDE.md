@@ -69,6 +69,14 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - Client JavaScript on the site only for the theme switch and share buttons; the menu is a `popover`, search a GET form.
 - System endpoints (`/api/cron/run`, `/api/revalidate`) check `CRON_SECRET` with `checkCronAuth`.
 
+## Starter content
+
+- `content/starter/articles/*.md` (front matter + a narrow Markdown dialect, parsed by `scripts/starter/parse.mjs`) and
+  `content/starter/images/*.jpg` are loaded by `npm run content:starter` (`scripts/content-starter.mjs`, secret key + Cloudinary
+  signed upload, idempotent by slug and public ID). Facts must come from the listed sources, dated, neutral on politics.
+- `tests/unit/starter.test.ts` checks every file against `sanitizeDoc` and the word count in `src/lib/doc/text.ts`; keep the
+  parser in step with the schema when blocks change.
+
 ## Tests (all without Docker)
 
 - `npm test`: unit (Vitest).
