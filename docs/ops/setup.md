@@ -95,6 +95,12 @@ Semua gambar disimpan dan dikirim oleh Cloudinary. Tanpa langkah ini Newsroom te
 4. Isi juga di **Vercel, Settings, Environment Variables** dengan nama yang sama, semua lingkungan tercentang (tabel langkah D2). Setelah itu **Deployments, titik tiga di deploy terbaru, Redeploy**, karena `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` dibaca saat build.
 5. Periksa: jalankan ulang `npm run dev`, buka Dashboard. Baris **Media** harus menulis **Cloudinary connected**. Buka **Media**, unggah satu gambar, isi Alt text, simpan.
 
+Periksa juga di Cloudinary, **Settings, Security**: **Strict transformations** harus mati (situs membuat ukuran gambar saat diminta, misalnya `w_640,f_auto,q_auto`), dan di **Restricted image types** jenis **Uploaded** tidak dicentang. Keduanya mati pada akun baru.
+
+Yang **tidak** perlu: upload preset, unsigned upload, `CLOUDINARY_URL` (API environment variable), SDK Cloudinary, membuat folder (folder `presscompass/images` dibuat sendiri saat unggah pertama). `NEXT_PUBLIC_CLOUDINARY_DELIVERY_URL` dan `CLOUDINARY_API_URL` hanya untuk tes; jangan diisi.
+
+Bila API Secret bocor: **Settings, API Keys, Generate New API Key**, isi pasangan baru di `.env` dan Vercel, Redeploy, lalu ubah **Status** kunci lama menjadi **Disabled**.
+
 Kuota Free: 25 kredit per bulan (1 kredit = 1.000 transformasi, atau 1 GB penyimpanan, atau 1 GB bandwidth). Gambar dikecilkan ke lebar maksimal 2560 px saat diunggah supaya hemat. Pemakaian bisa dilihat di Dashboard Cloudinary.
 
 ## F. Jadwal terbit (cron)
