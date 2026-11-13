@@ -1,0 +1,185 @@
+/* Ad slots and the cookie banner on the public site. Slots stay out of the layout until the reader accepts
+   (html[data-consent='all'], written by the early script before the first paint), then keep a fixed height. */
+
+.slot {
+  display: none;
+  margin: var(--space-6) auto;
+  max-width: 100%;
+  text-align: center;
+}
+
+:global(html[data-consent='all']) .slot {
+  display: block;
+}
+
+.label {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.box {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  min-height: var(--ad-h-d);
+  overflow: hidden;
+  background: var(--paper-sunken);
+}
+
+.box[data-filled] {
+  background: transparent;
+}
+
+.box iframe {
+  display: block;
+  width: 100%;
+  height: var(--ad-h-d);
+  border: 0;
+}
+
+.box :global(ins.adsbygoogle) {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .box {
+    min-height: var(--ad-h-m);
+  }
+
+  .box iframe {
+    height: var(--ad-h-m);
+  }
+
+  :global(html[data-consent='all']) .noMobile {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) {
+  :global(html[data-consent='all']) .noDesktop {
+    display: none;
+  }
+}
+
+/* Inside the article column the slot spans the text measure; in the rail it sticks below Related. */
+.inArticle {
+  margin: var(--space-6) 0;
+}
+
+.inRail {
+  margin: var(--space-6) 0 0;
+  position: sticky;
+  top: var(--space-5);
+}
+
+/* ---------------------------------------------------------------- consent banner */
+
+.banner {
+  display: none;
+  position: fixed;
+  z-index: 50;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  margin: 0 auto;
+  max-width: 920px;
+  padding: var(--space-4) var(--space-5);
+  gap: var(--space-4);
+  align-items: center;
+  background: var(--paper-raised);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+:global(html[data-consent='unset']) .banner,
+:global(html[data-consent-open]) .banner {
+  display: flex;
+}
+
+.bannerText {
+  flex: 1;
+  min-width: 0;
+}
+
+.bannerTitle {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.bannerText p {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+
+.bannerText a {
+  color: var(--link);
+}
+
+.bannerActions {
+  display: flex;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+/* Both choices look the same: neither is pushed. */
+.choice {
+  min-height: 44px;
+  padding: 0 var(--space-5);
+  font: inherit;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.choice:hover {
+  background: var(--paper-sunken);
+}
+
+.choice:focus-visible,
+.settings:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .banner {
+    flex-direction: column;
+    align-items: stretch;
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .bannerActions {
+    flex-direction: column;
+  }
+}
+
+.settings {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { CloudImage } from '@/components/media/CloudImage';
 import type { Block, Doc, Inline, ListItem, Mark, TableRow } from '@/lib/doc/schema';
 import { creditLine } from '@/lib/media/credit';
@@ -169,6 +169,24 @@ function blocks(content: (Block | ListItem)[], links: ArticleLinks | undefined, 
   });
 }
 
-export function ArticleBody({ doc, links, media }: { doc: Doc; links?: ArticleLinks; media?: ArticleMedia }) {
-  return <div className={styles.body}>{blocks(doc.content, links, media)}</div>;
+/** `inserts` adds content (in-article ads) after the top-level block with that index. */
+export function ArticleBody({
+  doc,
+  links,
+  media,
+  inserts,
+}: {
+  doc: Doc;
+  links?: ArticleLinks;
+  media?: ArticleMedia;
+  inserts?: Map<number, ReactNode>;
+}) {
+  const nodes = blocks(doc.content, links, media);
+  return (
+    <div className={styles.body}>
+      {inserts?.size
+        ? nodes.flatMap((node, index) => (inserts.has(index) ? [node, <Fragment key={`insert-${index}`}>{inserts.get(index)}</Fragment>] : [node]))
+        : nodes}
+    </div>
+  );
 }

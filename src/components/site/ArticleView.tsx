@@ -41,6 +41,8 @@ export function ArticleView({
   dateLine,
   actions,
   rail,
+  inserts,
+  afterBody,
 }: {
   article: ArticleViewData;
   /** id of the article element, the skip link's target. */
@@ -51,6 +53,10 @@ export function ArticleView({
   dateLine?: string;
   actions?: ReactNode;
   rail?: ReactNode;
+  /** In-article ads, after the top-level body block with that index. */
+  inserts?: Map<number, ReactNode>;
+  /** Shown after the body, before the sources (the end-of-article ad). */
+  afterBody?: ReactNode;
 }) {
   const sectionKicker = article.section ? kickerFor({ ...article, kicker: '', isBreaking: false, type: 'news' }) : null;
   const ownKicker = kickerFor({ ...article, section: null });
@@ -117,7 +123,8 @@ export function ArticleView({
             )}
           </figure>
         )}
-        <ArticleBody doc={article.body} links={article.links} media={article.media} />
+        <ArticleBody doc={article.body} links={article.links} media={article.media} inserts={inserts} />
+        {afterBody}
         {article.sources.length > 0 && (
           <section className={styles.sources} aria-label="Sources">
             <h2>Sources</h2>

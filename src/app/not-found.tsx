@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Page not found' };
 export default async function NotFound() {
   const latest = await getList('latest', null, 1, 5);
   return (
-    <SitePage page="not-found">
+    <SitePage page="not-found" ads={false}>
       <div className={styles.wrap}>
         <header className={`${styles.pageHead} ${styles.pageHeadPlain}`}>
           <h1 className={styles.h1}>Page not found</h1>

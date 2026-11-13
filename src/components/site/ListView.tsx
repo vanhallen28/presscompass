@@ -1,13 +1,19 @@
 import { notFound } from 'next/navigation';
+import { Fragment } from 'react';
+import { getSiteAds } from '@/modules/ads/queries';
 import { missing } from '@/modules/site/missing';
 import { getList, PAGE_SIZE } from '@/modules/site/queries';
 import type { ListKind, ListSubject } from '@/modules/site/types';
+import { AdSlot } from './ads/AdSlot';
 import { Pager } from './Pager';
 import { SitePage } from './SitePage';
 import styles from './site.module.css';
 import { Avatar, RowStory } from './Stories';
 
-// Section, author and tag pages: a heading for the subject, then its articles newest first, 24 a page.
+// Section, author and tag pages: a heading for the subject, then its articles newest first, 24 a page,
+// with the list ad slot after the sixth story.
+
+const LIST_AD_AFTER = 6;
 
 const BASE: Record<Exclude<ListKind, 'latest'>, (slug: string) => string> = {
   section: (slug) => `/${slug}`,
@@ -17,7 +23,7 @@ const BASE: Record<Exclude<ListKind, 'latest'>, (slug: string) => string> = {
 
 export async function ListView({ kind, slug, page }: { kind: Exclude<ListKind, 'latest'>; slug: string; page: number }) {
   const base = BASE[kind](slug);
-  const list = await getList(kind, slug, page);
+  const [list, ads] = await Promise.all([getList(kind, slug, page), getSiteAds()]);
   if (!list) return missing(page > 1 ? `${base}/page/${page}` : base);
   if (page > 1 && list.rows.length === 0) notFound();
   const subject = list.subject as ListSubject;
@@ -57,14 +63,20 @@ export async function ListView({ kind, slug, page }: { kind: Exclude<ListKind, '
           {list.total === 0 ? 'No articles yet.' : `${list.total.toLocaleString('en-GB')} ${list.total === 1 ? 'article' : 'articles'}`}
           {page > 1 && ` · page ${page}`}
         </p>
-        {list.rows.length > 0 && (
-          <ul className={styles.rows}>
-            {list.rows.map((card) => (
-              <li key={card.id}>
-                <RowStory card={card} hideSection={kind === 'section'} />
-              </li>
-            ))}
-          </ul>
+        {[list.rows.slice(0, LIST_AD_AFTER), list.rows.slice(LIST_AD_AFTER)].map(
+          (rows, part) =>
+            rows.length > 0 && (
+              <Fragment key={part}>
+                {part === 1 && <AdSlot ads={ads} placement="list" />}
+                <ul className={styles.rows}>
+                  {rows.map((card) => (
+                    <li key={card.id}>
+                      <RowStory card={card} hideSection={kind === 'section'} />
+                    </li>
+                  ))}
+                </ul>
+              </Fragment>
+            ),
         )}
         <Pager base={base} page={page} total={list.total} size={PAGE_SIZE} />
       </div>

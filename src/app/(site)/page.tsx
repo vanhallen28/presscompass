@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Fragment } from 'react';
 import { Icon } from '@/components/ds/Icon';
+import { AdSlot } from '@/components/site/ads/AdSlot';
 import { SitePage } from '@/components/site/SitePage';
 import { CardStory, LeadStory, OpinionStory, TopStory } from '@/components/site/Stories';
 import styles from '@/components/site/site.module.css';
+import { getSiteAds } from '@/modules/ads/queries';
 import { getHome } from '@/modules/site/queries';
 
 export const metadata: Metadata = {
@@ -13,7 +16,7 @@ export const metadata: Metadata = {
 
 // The front page (v0.4.0 fills it automatically; the homepage builder arrives in Plan 5).
 export default async function HomePage() {
-  const home = await getHome();
+  const [home, ads] = await Promise.all([getHome(), getSiteAds()]);
   const [lead, ...top] = home.top;
 
   return (
@@ -42,25 +45,29 @@ export default async function HomePage() {
           </div>
         )}
 
-        {home.sections.map((section) => (
-          <section key={section.slug} className={styles.sec} aria-label={section.name}>
-            <div className={styles.secHead}>
-              <h2 className={styles.h2}>
-                <Link href={`/${section.slug}`} className={styles.secLink}>
-                  {section.name}
+        {home.sections.map((section, index) => (
+          <Fragment key={section.slug}>
+            {index === 2 && <AdSlot ads={ads} placement="home_middle" />}
+            <section className={styles.sec} aria-label={section.name}>
+              <div className={styles.secHead}>
+                <h2 className={styles.h2}>
+                  <Link href={`/${section.slug}`} className={styles.secLink}>
+                    {section.name}
+                  </Link>
+                </h2>
+                <Link className={styles.more} href={`/${section.slug}`}>
+                  More {section.name.toLowerCase()} <Icon name="arrow-right" size={16} />
                 </Link>
-              </h2>
-              <Link className={styles.more} href={`/${section.slug}`}>
-                More {section.name.toLowerCase()} <Icon name="arrow-right" size={16} />
-              </Link>
-            </div>
-            <div className={styles.cards4}>
-              {section.articles.map((card) => (
-                <CardStory key={card.id} card={card} hideSection />
-              ))}
-            </div>
-          </section>
+              </div>
+              <div className={styles.cards4}>
+                {section.articles.map((card) => (
+                  <CardStory key={card.id} card={card} hideSection />
+                ))}
+              </div>
+            </section>
+          </Fragment>
         ))}
+        {home.sections.length > 0 && home.sections.length <= 2 && <AdSlot ads={ads} placement="home_middle" />}
 
         {home.opinion.length > 0 && (
           <section className={styles.sec} aria-label="Opinion">

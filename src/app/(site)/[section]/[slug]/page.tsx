@@ -3,11 +3,16 @@ import Link from 'next/link';
 import { permanentRedirect } from 'next/navigation';
 import { Icon } from '@/components/ds/Icon';
 import { ArticleView } from '@/components/site/ArticleView';
+import { AdSlot } from '@/components/site/ads/AdSlot';
+import adStyles from '@/components/site/ads/ads.module.css';
 import { ShareButtons } from '@/components/site/ShareButtons';
 import { SitePage } from '@/components/site/SitePage';
 import { CardStory, TopStory } from '@/components/site/Stories';
 import styles from '@/components/site/site.module.css';
 import { sanitizeDoc } from '@/lib/doc/sanitize';
+import { getSiteAds } from '@/modules/ads/queries';
+import { INLINE_PLACEMENTS, slotFor } from '@/modules/ads/types';
+import { inlinePositions } from '@/modules/ads/validate';
 import { articleHref } from '@/modules/site/format';
 import { missing } from '@/modules/site/missing';
 import { recentArticleParams } from '@/modules/site/params';
@@ -36,7 +41,25 @@ export default async function ArticlePage({ params }: Props) {
   // One address per article: a section in the address that is not the article's own moves to the right one.
   if (article.section?.slug !== section) permanentRedirect(articleHref(article));
 
+  const ads = await getSiteAds();
+  const body = sanitizeDoc(article.body);
   const links = new Map(article.links.map((link) => [link.id, { title: link.title, href: articleHref(link) }]));
+  // In-article ads after the chosen paragraphs (text paragraphs only, and only with two more after them).
+  const wanted = INLINE_PLACEMENTS.flatMap((placement) => {
+    const slot = slotFor(ads, placement);
+    return slot ? [{ placement, paragraph: slot.paragraph }] : [];
+  });
+  const positions = inlinePositions(
+    body.content.map((block) => (block.type === 'paragraph' && !block.content?.length ? 'empty' : block.type)),
+    wanted,
+  );
+  const inserts = new Map(
+    [...positions].map(([index, placements]) => [
+      index,
+      placements.map((placement) => <AdSlot key={placement} ads={ads} placement={placement} className={adStyles.inArticle} />),
+    ]),
+  );
+  const railAd = slotFor(ads, 'article_rail') ? <AdSlot ads={ads} placement="article_rail" className={adStyles.inRail} /> : null;
   const media = new Map(article.media.map((item) => [item.id, item]));
   const page = `article-${article.id}`;
 
@@ -46,19 +69,26 @@ export default async function ArticlePage({ params }: Props) {
         <ArticleView
           id={`article-${article.id}`}
           linked
-          article={{ ...article, body: sanitizeDoc(article.body), links, media }}
+          article={{ ...article, body, links, media }}
           actions={<ShareButtons title={article.title} />}
+          inserts={inserts}
+          afterBody={<AdSlot ads={ads} placement="article_end" className={adStyles.inArticle} />}
           rail={
-            article.related.length > 0 && (
+            (article.related.length > 0 || railAd) && (
               <div>
-                <h2 className={styles.railTitle}>Related</h2>
-                <ul className={styles.toplist}>
-                  {article.related.map((card) => (
-                    <li key={card.id}>
-                      <TopStory card={card} />
-                    </li>
-                  ))}
-                </ul>
+                {article.related.length > 0 && (
+                  <>
+                    <h2 className={styles.railTitle}>Related</h2>
+                    <ul className={styles.toplist}>
+                      {article.related.map((card) => (
+                        <li key={card.id}>
+                          <TopStory card={card} />
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                {railAd}
               </div>
             )
           }

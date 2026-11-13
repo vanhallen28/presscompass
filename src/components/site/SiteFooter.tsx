@@ -1,16 +1,18 @@
 import Link from 'next/link';
 import { Logo } from '@/components/ds/Logo';
-import { getSections, todayLine } from '@/modules/site/queries';
+import { adsActive, type SiteAds } from '@/modules/ads/types';
+import { getPages, getSections, todayLine } from '@/modules/site/queries';
+import { CookieSettingsButton } from './ads/CookieSettingsButton';
 import styles from './site.module.css';
 import { ThemeSwitch } from './ThemeSwitch';
 
-// Navy footer (paper-sunken in dark mode). Its text becomes editable in Plan 5; columns without content
-// (pages, newsletters, RSS) appear once those exist.
+// Navy footer (paper-sunken in dark mode). Published static pages are listed under PressCompass; Cookie
+// settings appears while ads with the consent banner are on. The footer text becomes editable in a later plan.
 
 const ABOUT = 'Independent, English-language news about Indonesia. Facts verified, context explained.';
 
-export async function SiteFooter() {
-  const [sections, today] = await Promise.all([getSections(), todayLine()]);
+export async function SiteFooter({ ads }: { ads: SiteAds }) {
+  const [sections, pages, today] = await Promise.all([getSections(), getPages(), todayLine()]);
   const year = today.slice(-4);
   return (
     <footer className={styles.foot}>
@@ -41,6 +43,11 @@ export async function SiteFooter() {
               <li>
                 <Link href="/search">Search</Link>
               </li>
+              {pages.map((page) => (
+                <li key={page.slug}>
+                  <Link href={`/${page.slug}`}>{page.title}</Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
@@ -50,6 +57,7 @@ export async function SiteFooter() {
         </div>
         <div className={styles.footBot}>
           <span>© {year} PressCompass · presscompass.site</span>
+          {adsActive(ads) && ads.consentRequired && <CookieSettingsButton />}
         </div>
       </div>
     </footer>
