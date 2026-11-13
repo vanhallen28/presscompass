@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { consentScript } from '@/components/site/ads/consent';
 import { THEME_SCRIPT } from '@/components/site/theme';
 import { siteUrl } from '@/lib/env';
+import { getSiteAds } from '@/modules/ads/queries';
+import { adsActive } from '@/modules/ads/types';
 import { newsreader, plexMono, plexSans } from './fonts';
 import '@/styles/tokens.css';
 import './globals.css';
@@ -21,12 +24,17 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // The early script runs before the first paint: the theme, and (while ads are on) the consent state for CSS
+  // and Google Consent Mode. It lives here because the root layout is never rendered again in the browser;
+  // React does not run a <script> it creates on the client and warns about it in development.
+  const ads = await getSiteAds();
+  const early = THEME_SCRIPT + (adsActive(ads) ? `;${consentScript(ads.consentRequired)}` : '');
   return (
-    // The theme script may set data-theme before React hydrates, hence suppressHydrationWarning.
+    // The early script sets data-theme and data-consent before React hydrates, hence suppressHydrationWarning.
     <html lang="en" className={`${newsreader.variable} ${plexSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: early }} />
       </head>
       <body>{children}</body>
     </html>

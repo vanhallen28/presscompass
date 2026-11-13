@@ -4,6 +4,7 @@ import { connection } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { publicEnv, secretKey } from '@/lib/env';
+import { readFetch } from './read-fetch';
 
 const NO_SESSION = { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } as const;
 
@@ -13,15 +14,10 @@ const NO_SESSION = { persistSession: false, autoRefreshToken: false, detectSessi
  */
 export function createPublicClient() {
   const { supabaseUrl, publishableKey } = publicEnv();
-  return createClient(supabaseUrl, publishableKey, { auth: NO_SESSION, global: { fetch: uncachedFetch } });
+  return createClient(supabaseUrl, publishableKey, { auth: NO_SESSION, global: { fetch: readFetch } });
 }
 
-/**
- * The site caches whole reads with 'use cache' and tags (src/modules/site/queries.ts). Next.js would otherwise
- * also keep the raw responses in its fetch cache, untagged, so a dropped tag would re-run the read and get
- * the old response back.
- */
-const uncachedFetch: typeof fetch = (input, init) => fetch(input, { ...init, cache: 'no-store' });
+
 
 /**
  * The signed-in Newsroom user's client (`authenticated` role), with the session kept in cookies.
