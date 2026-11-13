@@ -1,5 +1,19 @@
 # Riwayat versi
 
+## v0.3.0 · 13 November 2026 · Media Cloudinary (Rencana 3)
+
+- **Media** (menu baru): pustaka gambar di Cloudinary. Unggah beberapa gambar sekaligus langsung dari browser ke Cloudinary dengan tanda tangan dari server (berkas tidak lewat Vercel). JPEG, PNG, WebP, AVIF, GIF sampai 10 MB; lebar dikecilkan ke maksimal 2560 px saat masuk, folder `presscompass/images`.
+- **Halaman gambar:** Alt text, keterangan bawaan, kredit, ukuran, ID Cloudinary, daftar **Used in** (gambar utama, isi artikel, foto penulis), dan hapus bila tidak dipakai (data dan file di Cloudinary ikut terhapus). Gambar yang masih dipakai tidak bisa dihapus.
+- **Pemilih gambar** di editor: cari di pustaka atau unggah langsung, lalu isi alt text dan kredit (tersimpan pada gambar) serta keterangan (per pemakaian).
+- **Gambar utama** di panel editor dengan keterangannya sendiri, dan **blok Image** di toolbar isi artikel. Pratinjau menampilkan semuanya dengan keterangan dan "Photo: kredit".
+- **Aturan terbit baru:** artikel butuh gambar utama, dan gambar utama serta setiap gambar di isi harus punya alt text. Berlaku juga untuk Publish massal.
+- **Foto penulis** dipilih dari pustaka media di halaman Authors.
+- **Pengiriman gambar:** `srcset` Cloudinary `f_auto,q_auto` (AVIF atau WebP), lebar 320 sampai 1920, potongan 16:9, 3:2, dan 1:1 dengan `g_auto`. Kuota optimasi gambar Vercel tidak terpakai.
+- **Dashboard:** baris **Media** menulis apakah Cloudinary sudah tersambung. Tanpa kredensial Cloudinary situs tetap berjalan; hanya unggah yang dimatikan dengan penjelasan.
+- **Langkah tambahan:** buat akun Cloudinary Free dan isi `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` di `.env` dan di Vercel (`docs/ops/setup.md`, langkah E).
+- **Migrasi baru** `20261115000100_media.sql` (fungsi pemakaian gambar dan daftar pustaka): jalankan `npm run db:push` sebelum push ke GitHub.
+- Tes: 74 unit, 35 database, 43 E2E. E2E memakai Cloudinary tiruan yang memeriksa tanda tangan unggah dan hapus seperti Cloudinary asli.
+
 ## v0.2.0 · 13 November 2026 · Newsroom inti (Rencana 2)
 
 - **Articles:** daftar dengan tab status dan jumlahnya, cari (judul, alamat, penulis), filter rubrik dan penulis, 25 baris per halaman, dan aksi massal (Publish, Unpublish, Archive, Delete) yang menyebut artikel mana yang belum siap terbit dan kenapa.

@@ -50,4 +50,5 @@ git push origin vX.Y.Z
 | `db:push`: `Cannot find project ref. Have you run supabase link?` | jalankan `npm run db:link -- --project-ref KODE_PROYEK` dulu |
 | Keychain Mac menanyakan password "Supabase CLI" | isi password login Mac, pilih **Always Allow** |
 | Halaman Newsroom menulis "This page could not load" setelah update | migrasi belum diterapkan: jalankan `npm run db:push`, lalu muat ulang |
+| Unggah gambar menulis "Cloudinary is not connected yet" | isi kredensial Cloudinary di `.env` dan Vercel (`docs/ops/setup.md`, langkah E) |
 | Deploy Vercel diblokir karena penulis commit | jalankan langkah 3 lagi (amend dengan `--reset-author`, lalu push) |

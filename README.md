@@ -2,7 +2,7 @@
 
 Media berita berbahasa Inggris tentang Indonesia di presscompass.site, lengkap dengan CMS sendiri (Newsroom) di `/newsroom`.
 
-- **Stack:** Next.js 16 (App Router) di Vercel Hobby, Supabase Free (database dan login), Cloudinary Free (gambar, mulai v0.3.0).
+- **Stack:** Next.js 16 (App Router) di Vercel Hobby, Supabase Free (database dan login), Cloudinary Free (gambar).
 - **Tanpa Docker.** Semua perintah memakai npm dan Node 26.
 - **Sinkron ke Supabase** hanya lewat kunci bawaan proyek Supabase: Project URL, publishable key, dan secret key.
 
@@ -19,11 +19,12 @@ Media berita berbahasa Inggris tentang Indonesia di presscompass.site, lengkap d
 
 Langkah pemasangan lengkap: `docs/ops/setup.md`. Memasang versi baru: `docs/ops/update.md`. Riwayat versi: `CHANGELOG.md`.
 
-## Newsroom (v0.2.0)
+## Newsroom (v0.3.0)
 
-- **Articles:** daftar dengan tab status, cari, filter, aksi massal; editor blok dengan autosave, jadwal (WIB), riwayat versi, dan pratinjau.
-- **Sections, Tags, Authors:** dibuat dan diubah di Newsroom; alamat lama otomatis dialihkan (308) bila alamat yang sudah terbit berubah.
-- **Dashboard:** jumlah artikel per status dan artikel terbaru.
+- **Articles:** daftar dengan tab status, cari, filter, aksi massal; editor blok dengan autosave, jadwal (WIB), riwayat versi, dan pratinjau. Gambar utama dan blok gambar dengan keterangan.
+- **Media:** pustaka gambar di Cloudinary (unggah, alt text, kredit, dipakai di mana, hapus). Artikel hanya bisa terbit bila gambar utama dan semua gambarnya punya alt text.
+- **Sections, Tags, Authors:** dibuat dan diubah di Newsroom, termasuk foto penulis; alamat lama otomatis dialihkan (308) bila alamat yang sudah terbit berubah.
+- **Dashboard:** jumlah artikel per status, artikel terbaru, dan status database serta Cloudinary.
 
 ## Tes
 

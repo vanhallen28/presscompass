@@ -1,7 +1,7 @@
 # PressCompass · Design Spec (website + Newsroom CMS)
 
 **Tanggal:** 2026-11-13
-**Status:** disetujui pemilik 13 November 2026, dibangun mulai v0.1.0. Revisi v0.1.1: satu proyek Supabase. v0.2.0: Newsroom inti (lihat catatan lingkup di §17).
+**Status:** disetujui pemilik 13 November 2026, dibangun mulai v0.1.0. Revisi v0.1.1: satu proyek Supabase. v0.2.0: Newsroom inti (lihat catatan lingkup di §17). v0.3.0: media Cloudinary (catatan di §11).
 **Pemilik:** pemilik PressCompass (pengguna CMS tunggal)
 **Desain:** design system https://claude.ai/artifact/D3Mgp73bxchiin6SNrCxS3 dan preview `presscompass-preview.html` (Front page, Article, Newsroom CMS)
 **Catatan brand:** PROJECT WEB `claude/presscompass-brand-design-spec.md`
@@ -149,7 +149,7 @@ presscompass/
 |---|---|---|---|
 | `content` | `getPublished(kind, key)`, `listPublished(query)`, `getLayout('home' \| 'nav' \| 'settings')` | query Supabase, bentuk data siap render, tag cache | `supabase` (publishable key), `memory` untuk tes E2E publik |
 | `editor` | `saveDraft`, `transition(id, action)`, `restoreRevision` (Server Actions) | validasi per status, alur status, jadwal, revisi, slug dan redirect otomatis, pemicu revalidasi dan indexing | sesi pemilik + RLS |
-| `media` | `signUpload(staff) → signature`, `registerUpload(result) → media`, `imageUrl(media, preset)` | tanda tangan unggah, preset transformasi, loader `next/image`, hapus aset | `cloudinary`, `fake` untuk tes dan pratinjau tanpa kredensial |
+| `media` | `prepareUpload(file) → {uploadUrl, fields}`, `registerUpload(publicId) → media`, `imageSources(image, preset) → {src, srcSet}` | tanda tangan unggah, preset transformasi, `srcset`, hapus aset | Cloudinary asli; Cloudinary tiruan untuk tes |
 | `seo` | `metadata(doc, settings)`, `jsonLd(doc, settings)`, `analyse(doc) → checks` | aturan judul, meta, canonical, robots, schema per jenis, checklist panel SEO, cek tulisan | fungsi murni |
 | `indexer` | `notify(events)`, `runIndexer(now)` | antrean, dedup, jendela kirim, retry 1/5/30 menit, kuota harian, cek status bertahap, log | `real` (Search Console, URL Inspection, IndexNow, Indexing API), `fake` (dipilih `INDEXER_ADAPTER`) |
 | `monitor` | `runMonitor(now)`, `getDashboard(period)` | sinkron Search Analytics, pindai tautan, halaman yatim, ringkasan dashboard | `real`, `fake` |
@@ -318,13 +318,15 @@ Pemicu: terbit, Major update, pindah alamat, batal terbit, dan hapus, untuk arti
 
 Keputusan pemilik 13 November 2026: semua gambar lewat Cloudinary, sama dengan point.lat.
 
-- **Unggah dari Newsroom:** browser mengunggah langsung ke Cloudinary dengan tanda tangan dari `POST /api/media/sign` (hanya pemilik yang masuk). File tidak lewat fungsi Vercel, jadi batas unggah server sekitar 4,5 MB tidak berlaku. Setelah unggah, data hasilnya (public ID, ukuran, format, byte) disimpan ke tabel `media`.
-- **Transformasi saat masuk:** gambar dibatasi lebar maksimal 2560 px dengan `q_auto`, supaya penyimpanan kecil. Folder `presscompass/images`.
-- **Pengiriman:** loader `next/image` khusus Cloudinary membuat `srcset` dengan `f_auto,q_auto` (AVIF atau WebP sesuai peramban) dan potongan per preset (`hero` 16:9, `card` 3:2, `square` 1:1 untuk avatar). Optimasi gambar Vercel tidak dipakai, jadi kuota 5.000 transformasi Hobby tidak tersentuh.
+- **Unggah dari Newsroom:** browser mengunggah langsung ke Cloudinary dengan tanda tangan dari Server Action `prepareUpload` (hanya pemilik yang masuk). File tidak lewat fungsi Vercel, jadi batas unggah server sekitar 4,5 MB tidak berlaku. Setelah unggah, server membaca ulang data gambar dari Admin API Cloudinary (public ID, ukuran, format, byte), bukan dari browser, lalu menyimpannya ke tabel `media`.
+- **Transformasi saat masuk:** gambar dibatasi lebar maksimal 2560 px dengan `q_auto`, supaya penyimpanan kecil. Folder `presscompass/images`, nama file dari nama asli ditambah 8 karakter acak, tanpa menimpa. Format JPEG, PNG, WebP, AVIF, GIF; maksimal 10 MB.
+- **Pengiriman:** komponen `CloudImage` menulis `<img srcset>` biasa dengan URL Cloudinary `f_auto,q_auto` (AVIF atau WebP sesuai peramban) dan potongan per preset (`original`, `hero` 16:9, `card` 3:2, `square` 1:1 untuk avatar), lebar 320 sampai 1920 dan tidak melebihi lebar asli. Optimasi gambar Vercel tidak dipakai, jadi kuota 5.000 transformasi Hobby tidak tersentuh.
 - `width` dan `height` selalu diisi (CLS 0). Gambar di bawah lipatan dimuat lambat, gambar utama beranda dan artikel diprioritaskan (LCP).
-- Alt wajib sebelum gambar dipakai di artikel terbit. Keterangan dan kredit opsional.
-- **Pustaka media:** cari, filter, ganti alt atau keterangan, lihat dipakai di artikel mana, dan hapus bila tidak dipakai (aset di Cloudinary ikut dihapus).
-- **Tanpa kredensial** (tes, pratinjau awal) aplikasi memakai adapter `fake`; di produksi aplikasi menolak berjalan tanpa kredensial Cloudinary.
+- **Alt disimpan pada gambar** (satu alt per gambar, dipakai di semua tempat); **keterangan per pemakaian** (gambar utama punya kolom keterangan sendiri, blok gambar juga). Kredit disimpan pada gambar dan tampil sebagai "Photo: ...".
+- **Aturan terbit:** artikel butuh gambar utama, dan gambar utama serta setiap blok gambar harus punya alt.
+- **Pustaka media:** cari (alt, keterangan, kredit, nama file), ganti alt, keterangan bawaan, dan kredit, lihat dipakai di mana (gambar utama, isi artikel, foto penulis), dan hapus bila tidak dipakai: data dihapus dulu, lalu aset di Cloudinary.
+- **Tanpa kredensial** aplikasi tetap berjalan: tombol unggah dimatikan dengan penjelasan, gambar yang sudah ada tetap tampil, dan Dashboard menulis "Media: Cloudinary is not connected". Tes memakai Cloudinary tiruan di `tests/fake-supabase/cloudinary.mjs` yang memeriksa tanda tangan seperti aslinya.
+- **Catatan v0.3.0 (penyimpangan teknis dari rancangan awal, tidak mengubah apa yang dilihat pembaca):** (1) bukan loader `next/image` melainkan `<img srcset>` sendiri, karena preset potongan berbeda per gambar lebih mudah diatur langsung dan `<img>` biasa tidak menambah JavaScript di halaman pembaca; hasilnya sama (srcset, sizes, lazy, prioritas). (2) Tidak menolak berjalan tanpa kredensial Cloudinary, supaya situs tidak mati bila kunci Cloudinary terlambat diisi di Vercel. (3) Tanda tangan lewat Server Action, bukan route `/api/media/sign`.
 - Gambar OG otomatis tetap dibuat `next/og` (§9), bukan Cloudinary.
 
 ## 12. Performa, aksesibilitas, motion
@@ -390,11 +392,13 @@ Setiap rencana ditulis tepat sebelum dikerjakan (skill writing-plans), dieksekus
 
 Catatan lingkup v0.2.0: blok gambar dan gambar utama pindah ke Rencana 3 (butuh pustaka media), blok Chart ke Rencana 4 (digambar SVG oleh situs), tab SEO editor tetap Rencana 6. Terbit terjadwal berjalan saat Newsroom dibuka (`publish_due_articles()`); pemanggil otomatis datang bersama situs publik.
 
+Catatan lingkup v0.3.0: pustaka media, pemilih gambar, gambar utama dengan keterangan, blok gambar, foto penulis, dan aturan terbit gambar selesai. Gambar tampil di pratinjau Newsroom; situs publik yang menampilkannya datang di Rencana 4.
+
 | Rencana | Isi | Versi |
 |---|---|---|
 | 1. Fondasi | proyek Next.js (npm, Node 26), token dan font dari design system, komponen dasar, skema Supabase v1 + RLS, tiga klien Supabase, login Newsroom, penjaga lingkungan, CI, `CLAUDE.md` | v0.1.0 |
 | 2. Newsroom inti | kerangka CMS, Rubrik, Tag, Penulis, Artikel (editor blok, alur status, jadwal, autosave, revisi, pratinjau) | v0.2.0 |
-| 3. Media Cloudinary | unggah bertanda tangan, transformasi masuk, loader `next/image`, pustaka dan pemilih media, gambar utama + keterangan, blok gambar, aturan terbit "gambar utama dengan alt" | v0.3.0 |
+| 3. Media Cloudinary | unggah bertanda tangan, transformasi masuk, `srcset` Cloudinary (`CloudImage`), pustaka dan pemilih media, gambar utama + keterangan, blok gambar, aturan terbit "gambar utama dengan alt" | v0.3.0 |
 | 4. Situs publik | beranda, artikel, rubrik, penulis, tag, halaman, cari, 404, header, footer, pita Latest, mode gelap, cache bertag, blok Chart (SVG), endpoint cron untuk terbit terjadwal + revalidasi | v0.4.0 |
 | 5. Semua bisa diedit | penyusun beranda, page builder, navigasi dan footer, pengaturan situs, newsletter, form kontak, Pembaca | v0.5.0 |
 | 6. SEO | metadata, JSON-LD, sitemap + news, RSS, robots, OG otomatis, redirect, log 404, panel SEO dan Writing check | v0.6.0 |

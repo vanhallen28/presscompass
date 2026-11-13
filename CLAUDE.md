@@ -42,6 +42,19 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - Saving goes through the SQL function `save_article` (version check, slug, relations, revision) via `prepareSave()`.
   Status rules live in `src/modules/editor/status.ts`, publish rules in `rules.ts`.
 
+## Media (Cloudinary)
+
+- Files live on Cloudinary; the `media` table keeps the public ID, size, alt text, default caption and credit.
+  Alt text belongs to the image (one per image); captions belong to each use (`articles.lead_caption`, image block attrs).
+- Uploads go straight from the browser to Cloudinary with fields signed by the `prepareUpload` Server Action
+  (`src/modules/media/cloudinary.ts`). `registerUpload` re-reads the resource from the Admin API; never trust the browser's
+  sizes. Public IDs stay under `presscompass/images/`.
+- Readers' images use `CloudImage` (`<img srcset>` built by `src/lib/media/url.ts`), not `next/image`: always pass
+  `sizes`, and `priority` only for the one LCP image.
+- Without Cloudinary keys the app still runs (`uploadsReady()` is false); never throw at startup for them.
+- Deleting removes the row first, then the Cloudinary asset, and only when `media_usage()` is empty.
+- E2E uses the fake Cloudinary in `tests/fake-supabase/cloudinary.mjs` (same signatures, Admin API, delivery).
+
 ## Tests (all without Docker)
 
 - `npm test`: unit (Vitest).

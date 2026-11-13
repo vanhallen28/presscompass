@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { expectNoAxeViolations, seedArticle, seedTaxonomy, signIn, sql, unique } from './helpers';
+import { expectNoAxeViolations, seedArticle, seedMedia, seedTaxonomy, signIn, sql, unique } from './helpers';
 
 // Locators use roles, not labels: Next keeps visited pages hidden in the DOM, and roles skip hidden elements.
 
@@ -28,6 +28,8 @@ test.describe('articles', () => {
   test('writes a draft that saves itself, explains what blocks publishing, then publishes', async ({ page }) => {
     test.setTimeout(60_000);
     const { section, author, tag } = await seedTaxonomy('Write');
+    const leadAlt = unique('Rice terraces in Bali');
+    await seedMedia(leadAlt);
     const headline = unique('Rice prices climb');
     const id = await newArticle(page);
 
@@ -43,9 +45,19 @@ test.describe('articles', () => {
 
     await page.getByRole('button', { name: 'Publish now' }).click();
     const problems = main(page).getByRole('alert');
-    await expect(problems).toContainText('2 things need attention');
+    await expect(problems).toContainText('3 things need attention');
     await expect(problems).toContainText('Choose a section.');
     await expect(problems).toContainText('Add at least one author.');
+    await expect(problems).toContainText('Choose a lead image.');
+
+    await page.getByRole('button', { name: 'Choose image' }).click();
+    const picker = page.getByRole('dialog', { name: 'Lead image' });
+    await picker.getByRole('searchbox', { name: 'Search the media library' }).fill(leadAlt);
+    await picker.getByRole('button', { name: 'Search' }).click();
+    await picker.getByRole('button', { name: leadAlt }).click();
+    await picker.getByRole('button', { name: 'Use as lead image' }).click();
+    await expect(picker).toBeHidden();
+    await expect(main(page).getByText(`Alt text: ${leadAlt}`)).toBeVisible();
 
     await page.getByRole('combobox', { name: 'Section' }).selectOption({ label: section.name });
     await page.getByRole('combobox', { name: 'Add an author' }).selectOption({ label: author.name });
@@ -193,7 +205,8 @@ test.describe('articles', () => {
     await expect(main(page).getByRole('status').filter({ hasText: 'Draft saved.' })).toBeVisible();
     await page.getByRole('textbox', { name: 'Headline' }).fill('Second headline');
     await page.getByRole('button', { name: 'Save draft' }).click();
-    await expect(main(page).getByRole('status').filter({ hasText: 'Draft saved.' })).toBeVisible();
+    // The first save's notice is still on screen, so wait for the second save in the database itself.
+    await expect.poll(async () => (await sql<{ title: string }>(`select title from public.articles where id = $1`, [id]))[0].title).toBe('Second headline');
 
     await page.goto(`/newsroom/articles/${id}/history`);
     await page.getByRole('row').nth(2).getByRole('button', { name: 'Restore' }).click();

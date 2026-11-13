@@ -8,6 +8,12 @@ const E2E_ENV = {
   NEXT_PUBLIC_SITE_URL: `http://localhost:${PORT}`,
   NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${MOCK_SUPABASE_PORT}`,
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_e2e',
+  // The fake Supabase also plays Cloudinary (tests/fake-supabase/cloudinary.mjs): signed uploads, Admin API, delivery.
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: 'demo',
+  NEXT_PUBLIC_CLOUDINARY_DELIVERY_URL: `http://127.0.0.1:${MOCK_SUPABASE_PORT}/fake-cloudinary`,
+  CLOUDINARY_API_URL: `http://127.0.0.1:${MOCK_SUPABASE_PORT}/fake-cloudinary`,
+  CLOUDINARY_API_KEY: 'fake-key',
+  CLOUDINARY_API_SECRET: 'fake-secret',
 };
 
 export default defineConfig({
