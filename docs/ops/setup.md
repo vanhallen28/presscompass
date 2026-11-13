@@ -1,7 +1,7 @@
 # Pemasangan PressCompass
 
-Panduan sekali jalan untuk pemilik: Supabase, komputer, GitHub, Vercel, dan Cloudinary. Semua gratis dan tanpa Docker.
-Rahasia (password database, secret key, API secret Cloudinary) tidak pernah dikirim lewat percakapan; isi langsung di tempatnya.
+Panduan sekali jalan untuk pemilik: Supabase, komputer, GitHub, Vercel, Cloudinary, dan jadwal terbit. Semua gratis dan tanpa Docker.
+Rahasia (password database, secret key, API secret Cloudinary, `CRON_SECRET`) tidak pernah dikirim lewat percakapan; isi langsung di tempatnya.
 
 PressCompass memakai **satu** proyek Supabase (`presscompass`) untuk situs produksi, deploy Preview Vercel, dan komputer Anda (keputusan pemilik 13 November 2026). Artinya `npm run dev` di komputer membaca dan menulis data yang sama dengan situs live. Draf tetap tidak terlihat pembaca, karena hanya konten terbit yang bisa dibaca publik.
 
@@ -63,11 +63,12 @@ Setiap pembaruan yang membawa migrasi cukup menjalankan `npm run db:push` sekali
    | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | cloud name (langkah E) |
    | `CLOUDINARY_API_KEY` | API key (langkah E) |
    | `CLOUDINARY_API_SECRET` | API secret (langkah E) |
+   | `CRON_SECRET` | 64 karakter acak (langkah F) |
 
 3. Deploy. Region fungsi sudah dikunci ke Singapura (`sin1`) lewat `vercel.json`.
 4. **Settings, Domains:** tambahkan `presscompass.site` dan ikuti petunjuk DNS Vercel di tempat domain dibeli.
 5. Periksa:
-   - https://presscompass.site menampilkan halaman "Launching soon";
+   - https://presscompass.site menampilkan beranda (berisi kalimat sambutan sampai artikel pertama terbit);
    - https://presscompass.site/newsroom meminta masuk, lalu Dashboard menunjukkan **Database Connected** dan **Deployment Production**.
 
 ## E. Cloudinary (gambar, gratis)
@@ -96,6 +97,50 @@ Semua gambar disimpan dan dikirim oleh Cloudinary. Tanpa langkah ini Newsroom te
 
 Kuota Free: 25 kredit per bulan (1 kredit = 1.000 transformasi, atau 1 GB penyimpanan, atau 1 GB bandwidth). Gambar dikecilkan ke lebar maksimal 2560 px saat diunggah supaya hemat. Pemakaian bisa dilihat di Dashboard Cloudinary.
 
+## F. Jadwal terbit (cron)
+
+Artikel terjadwal diterbitkan oleh `GET /api/cron/run`. Vercel Hobby hanya boleh memanggilnya sekali sehari (sekitar 06.00 WIB, sudah diatur di `vercel.json`). Supaya artikel terjadwal terbit paling lambat 5 menit setelah waktunya, Supabase Cron memanggil endpoint yang sama setiap 5 menit. Gratis, dan sekaligus menjaga proyek Supabase Free tidak dijeda karena sepi. Membuka Newsroom juga menerbitkan artikel yang jatuh tempo.
+
+1. Buat rahasia di Terminal Mac:
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+   Salin keluarannya (64 karakter) ke pengelola password. Jangan kirim ke siapa pun.
+2. **Vercel, Settings, Environment Variables:** tambah `CRON_SECRET` dengan nilai itu, semua lingkungan tercentang. Lalu **Deployments, titik tiga di deploy terbaru, Redeploy**.
+3. **Supabase, Database, Extensions:** nyalakan **pg_cron** dan **pg_net**.
+4. **Supabase, Integrations, Vault, Add new secret:** nama `cron_secret`, nilai sama persis dengan `CRON_SECRET`. Rahasia tidak diketik di SQL Editor, supaya tidak tersimpan di riwayat kueri.
+5. **Supabase, SQL Editor**, jalankan (ganti alamat bila domain belum aktif, misalnya dengan alamat `….vercel.app` dari Vercel, Settings, Domains):
+
+   ```sql
+   select cron.schedule(
+     'presscompass-run',
+     '*/5 * * * *',
+     $$
+     select net.http_get(
+       url := 'https://presscompass.site/api/cron/run',
+       headers := jsonb_build_object(
+         'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')
+       ),
+       timeout_milliseconds := 30000
+     );
+     $$
+   );
+   ```
+
+   **Hasil yang diharapkan:** satu baris berisi nomor job.
+6. Periksa setelah 10 menit:
+
+   ```sql
+   select status, return_message, start_time from cron.job_run_details order by start_time desc limit 3;
+   select status_code, error_msg, created from net._http_response order by created desc limit 3;
+   ```
+
+   Hasilnya `succeeded` dan `status_code` 200. Di Vercel, Logs dengan path `/api/cron/run` menampilkan 12 permintaan per jam.
+
+Mematikan: `select cron.unschedule('presscompass-run');`. Rahasia hanya memberi izin menerbitkan artikel yang memang sudah jatuh tempo (aman bila terpanggil berlebih). Bila bocor, buat nilai baru, ganti di Vercel dan Vault, lalu Redeploy.
+
 ## Bila ada masalah
 
 | Gejala | Penyebab dan jalan keluar |
@@ -107,4 +152,8 @@ Kuota Free: 25 kredit per bulan (1 kredit = 1.000 transformasi, atau 1 GB penyim
 | Unggah gambar: "Cloudinary is not connected yet" | tiga nilai Cloudinary belum ada di `.env` (komputer) atau di Vercel; isi (langkah E), lalu jalankan ulang `npm run dev` atau Redeploy di Vercel |
 | Unggah gambar: "Cloudinary refused the file: Invalid Signature" (atau "Invalid API key") | API key atau API secret salah ketik, atau milik akun lain dari cloud name; salin ulang dari Settings, API Keys |
 | Gambar tampil kosong padahal unggah berhasil | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` salah, atau Vercel belum di-Redeploy setelah env diisi |
+| `net._http_response` berisi `status_code` 401 | `cron_secret` di Vault tidak sama dengan `CRON_SECRET` di Vercel; ubah salah satunya (tidak perlu menjadwal ulang) |
+| `status_code` 503: "CRON_SECRET is not set" | `CRON_SECRET` belum ada di Vercel atau kurang dari 32 karakter; isi lalu Redeploy |
+| Artikel sudah terbit di Newsroom tetapi situs masih menampilkan "Page not found" | muat ulang halaman setelah beberapa detik: situs menyimpan halaman di cache dan diperbarui sesaat setelah Publish |
+| Build Vercel gagal dengan pesan `site_list:` atau `sections:` | build membaca Supabase untuk menyiapkan halaman; proyek Supabase dijeda atau tidak terjangkau. Pulihkan proyek (Supabase, Restore), lalu Redeploy. Deploy lama tetap tayang |
 | Deploy Vercel diblokir: commit author tidak punya akses | perintah pasang selalu memuat `git commit --amend --no-edit --reset-author` sebelum push; jalankan lalu push lagi |

@@ -1,5 +1,21 @@
 # Riwayat versi
 
+## v0.4.0 · 13 November 2026 · Situs publik (Rencana 4)
+
+- **Situs publik** dengan tata letak yang dikunci di preview: baris tanggal (WIB), masthead, navigasi rubrik dengan garis merah untuk rubrik aktif, pita **Latest** (artikel 24 jam terakhir), menu rubrik dan kotak cari dari tombol menu (tanpa JavaScript), footer navy.
+- **Beranda** otomatis: artikel terbaru sebagai lead dengan 4 **Top stories**, satu baris untuk setiap rubrik di navigasi (tanpa mengulang artikel), dan **Opinion**. Sebelum ada artikel, beranda menampilkan kalimat sambutan.
+- **Halaman artikel** `/{rubrik}/{slug}`: kicker rubrik dan jenis, judul, standfirst, byline dengan foto penulis, tanggal dan "Updated", waktu baca, tombol salin tautan (dan bagikan di HP), gambar utama dengan keterangan, isi, sumber, tag, rail **Related** (pilihan editor dulu, lalu otomatis), dan **More from** rubrik.
+- **Rubrik, penulis, tag:** daftar artikel 24 per halaman dengan halaman berikutnya (`/business/page/2`). Halaman penulis memuat foto, jabatan, bio, dan tautan. Penulis dan tag tanpa artikel terbit tidak punya halaman.
+- **Cari** `/search`: pencarian teks penuh di judul, standfirst, dan isi. **404** dengan kotak cari dan artikel terbaru.
+- **Mode gelap:** mengikuti perangkat, dengan sakelar Auto, Light, Dark di footer yang diingat browser tanpa kedip saat halaman dibuka.
+- **Blok Chart** di editor (tombol grafik di toolbar): grafik batang atau garis dari tabel yang ditempel dari spreadsheet, digambar SVG oleh situs, dengan tabel tersembunyi untuk pembaca layar.
+- **Pratinjau Newsroom** kini memakai komponen yang sama dengan halaman situs.
+- **Cache:** halaman situs disimpan dan diperbarui sendiri sesaat setelah Publish, Update, perubahan rubrik/tag/penulis, atau detail gambar di Newsroom.
+- **Terbit terjadwal otomatis:** `GET /api/cron/run` dengan `CRON_SECRET`. Vercel Cron sekali sehari (sekitar 06.00 WIB); Supabase Cron setiap 5 menit dipasang sekali dari panduan (`docs/ops/setup.md`, langkah F).
+- **Langkah tambahan:** isi `CRON_SECRET` di Vercel (buat dengan `openssl rand -hex 32`), lalu pasang Supabase Cron (langkah F).
+- **Migrasi baru** `20261116000100_public_site.sql` (fungsi baca situs): jalankan `npm run db:push` sebelum push ke GitHub, karena build Vercel kini membaca Supabase.
+- Tes: 90 unit, 43 database, 61 E2E.
+
 ## v0.3.0 · 13 November 2026 · Media Cloudinary (Rencana 3)
 
 - **Media** (menu baru): pustaka gambar di Cloudinary. Unggah beberapa gambar sekaligus langsung dari browser ke Cloudinary dengan tanda tangan dari server (berkas tidak lewat Vercel). JPEG, PNG, WebP, AVIF, GIF sampai 10 MB; lebar dikecilkan ke maksimal 2560 px saat masuk, folder `presscompass/images`.

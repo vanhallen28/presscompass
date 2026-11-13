@@ -1,7 +1,7 @@
 # PressCompass · Design Spec (website + Newsroom CMS)
 
 **Tanggal:** 2026-11-13
-**Status:** disetujui pemilik 13 November 2026, dibangun mulai v0.1.0. Revisi v0.1.1: satu proyek Supabase. v0.2.0: Newsroom inti (lihat catatan lingkup di §17). v0.3.0: media Cloudinary (catatan di §11).
+**Status:** disetujui pemilik 13 November 2026, dibangun mulai v0.1.0. Revisi v0.1.1: satu proyek Supabase. v0.2.0: Newsroom inti (lihat catatan lingkup di §17). v0.3.0: media Cloudinary (catatan di §11). v0.4.0: situs publik (catatan di §4 dan §17).
 **Pemilik:** pemilik PressCompass (pengguna CMS tunggal)
 **Desain:** design system https://claude.ai/artifact/D3Mgp73bxchiin6SNrCxS3 dan preview `presscompass-preview.html` (Front page, Article, Newsroom CMS)
 **Catatan brand:** PROJECT WEB `claude/presscompass-brand-design-spec.md`
@@ -96,6 +96,9 @@ Pembaca tidak pernah menulis langsung ke Supabase. Form newsletter, kontak, dan 
 - Terbit, batal terbit, hapus, dan perubahan besar membuang tag yang terdampak. Simpan draf tidak menyentuh situs.
 - JavaScript klien di situs hanya untuk sakelar tema, menu HP, pencarian, form newsletter, dan salin tautan.
 - API cache Next.js yang tepat (`'use cache'` + `cacheTag` atau fungsi cache yang setara) dipilih di Rencana 1 dari dokumentasi Next.js terbaru, lalu dibungkus satu modul supaya mudah diganti.
+- **Catatan v0.4.0 (yang dibangun):** semua bacaan situs lewat fungsi SQL `site_home`, `site_list`, `site_article`, `site_search` (JSON siap render, RLS tetap berlaku, menyaring "terbit dan jatuh tempo" sendiri), dibungkus `'use cache'` + `cacheLife('hours')` di `src/modules/site/queries.ts`. Tag disederhanakan menjadi `site`, `articles`, `article:{id}`, `taxonomy`. Newsroom membuang tag satu detik setelah perubahan (`revalidateTag` dengan `expire: 1`), bukan seketika, karena kedaluwarsa seketika membuat Next.js merender ulang halaman Newsroom dan editor kehilangan keadaannya. Fetch Supabase untuk situs memakai `cache: 'no-store'` supaya hanya lapisan `'use cache'` (bertag) yang menyimpan.
+- Rute dinamis memakai `generateStaticParams` (artikel terbaru dan rubrik saat build, atau placeholder) dan `instant = false`. Alamat yang tidak ada di daftar itu dirender pada kunjungan pertama lalu disimpan. Batasan Next.js: kunjungan **pertama** ke alamat yang tidak ada mendapat status 200 dengan `noindex` (dan redirect 308 dikirim di dalam halaman); kunjungan berikutnya dari cache mendapat 404 dan 308 sungguhan. Redirect dan 404 yang selalu sungguhan sejak kunjungan pertama dipertimbangkan di Rencana 6 (SEO).
+- Build membaca Supabase untuk prerender. Bila Supabase dijeda saat build, build gagal dan deploy lama tetap tayang.
 
 ### Jadwal dan pekerjaan latar
 
@@ -394,15 +397,17 @@ Catatan lingkup v0.2.0: blok gambar dan gambar utama pindah ke Rencana 3 (butuh 
 
 Catatan lingkup v0.3.0: pustaka media, pemilih gambar, gambar utama dengan keterangan, blok gambar, foto penulis, dan aturan terbit gambar selesai. Gambar tampil di pratinjau Newsroom; situs publik yang menampilkannya datang di Rencana 4.
 
+Catatan lingkup v0.4.0: beranda otomatis (lead + Top stories, baris per rubrik di navigasi, Opinion), artikel, rubrik, penulis, tag (dengan halaman berikutnya), cari, 404, header, footer, pita Latest, sakelar tema, blok Chart, endpoint cron dan revalidasi selesai. Halaman statis (`/{page}`), blok Most read + Newsletter, data band, dan teks footer yang bisa diedit pindah ke Rencana 5 (bersama page builder dan penyusun beranda); Most read dari Search Console tetap Rencana 7. Panduan Supabase Cron 5 menit dipindah dari Rencana 7 ke v0.4.0 (`docs/ops/setup.md` langkah F), karena terbit terjadwal membutuhkannya sekarang; Rencana 7 menambahkan pekerjaan indexing ke endpoint yang sama.
+
 | Rencana | Isi | Versi |
 |---|---|---|
 | 1. Fondasi | proyek Next.js (npm, Node 26), token dan font dari design system, komponen dasar, skema Supabase v1 + RLS, tiga klien Supabase, login Newsroom, penjaga lingkungan, CI, `CLAUDE.md` | v0.1.0 |
 | 2. Newsroom inti | kerangka CMS, Rubrik, Tag, Penulis, Artikel (editor blok, alur status, jadwal, autosave, revisi, pratinjau) | v0.2.0 |
 | 3. Media Cloudinary | unggah bertanda tangan, transformasi masuk, `srcset` Cloudinary (`CloudImage`), pustaka dan pemilih media, gambar utama + keterangan, blok gambar, aturan terbit "gambar utama dengan alt" | v0.3.0 |
 | 4. Situs publik | beranda, artikel, rubrik, penulis, tag, halaman, cari, 404, header, footer, pita Latest, mode gelap, cache bertag, blok Chart (SVG), endpoint cron untuk terbit terjadwal + revalidasi | v0.4.0 |
-| 5. Semua bisa diedit | penyusun beranda, page builder, navigasi dan footer, pengaturan situs, newsletter, form kontak, Pembaca | v0.5.0 |
+| 5. Semua bisa diedit | penyusun beranda (termasuk data band dan Most read + Newsletter), page builder dan halaman statis, navigasi dan footer, pengaturan situs, newsletter, form kontak, Pembaca | v0.5.0 |
 | 6. SEO | metadata, JSON-LD, sitemap + news, RSS, robots, OG otomatis, redirect, log 404, panel SEO dan Writing check | v0.6.0 |
-| 7. Mesin Indexing + Dashboard SEO | antrean, adapter Google dan IndexNow, Supabase Cron, status indeks, Search Analytics, dashboard, pemeriksa tautan | v0.7.0 |
+| 7. Mesin Indexing + Dashboard SEO | antrean, adapter Google dan IndexNow (lewat endpoint cron yang sudah dipanggil Supabase Cron), status indeks, Search Analytics, dashboard, pemeriksa tautan | v0.7.0 |
 | 8. Rilis | header keamanan, cadangan mingguan, Lighthouse, runbook, domain, Search Console, rilis produksi | v1.0.0 |
 
 ## 18. Setup dari pemilik
