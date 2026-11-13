@@ -48,6 +48,7 @@ export function MediaDetailsForm({ media }: { media: MediaItem }) {
         maxLength={MEDIA_LIMITS.credit}
         error={state.errors.credit}
         placeholder="Rani Prameswari/PressCompass"
+        hint="Shown as “Photo: …”. Start with a label to change it, for example “Illustration: PressCompass”."
       />
       <div className={forms.actions}>
         <SubmitButton pendingLabel="Saving…">Save details</SubmitButton>

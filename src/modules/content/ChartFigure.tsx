@@ -127,29 +127,32 @@ export function ChartFigure({ chart }: { chart: ChartAttrs }) {
           ) : null,
         )}
       </svg>
-      <table className="sr-only">
-        <caption>{[chart.title, chart.subtitle].filter(Boolean).join('. ') || 'Chart data'}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{chart.axis || 'Label'}</th>
-            {series.map((s, j) => (
-              <th key={j} scope="col">
-                {s.name}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {labels.map((label, i) => (
-            <tr key={i}>
-              <th scope="row">{label}</th>
+      {/* A table ignores the 1px width of .sr-only and would widen the page, so the wrapper is hidden instead. */}
+      <div className="sr-only">
+        <table>
+          <caption>{[chart.title, chart.subtitle].filter(Boolean).join('. ') || 'Chart data'}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{chart.axis || 'Label'}</th>
               {series.map((s, j) => (
-                <td key={j}>{s.values[i] === null ? 'No data' : formatChartNumber(s.values[i] as number)}</td>
+                <th key={j} scope="col">
+                  {s.name}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {labels.map((label, i) => (
+              <tr key={i}>
+                <th scope="row">{label}</th>
+                {series.map((s, j) => (
+                  <td key={j}>{s.values[i] === null ? 'No data' : formatChartNumber(s.values[i] as number)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {chart.source && <figcaption className={styles.source}>Source: {chart.source}</figcaption>}
     </figure>
   );

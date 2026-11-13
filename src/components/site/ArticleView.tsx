@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Fragment, type ReactNode } from 'react';
 import { CloudImage } from '@/components/media/CloudImage';
 import type { Doc } from '@/lib/doc/schema';
+import { creditLine } from '@/lib/media/credit';
 import { formatWib } from '@/lib/time';
 import { ArticleBody, type ArticleLinks, type ArticleMedia, BODY_IMAGE_SIZES } from '@/modules/content/ArticleBody';
 import type { ArticleType, Source } from '@/modules/editor/input';
@@ -111,7 +112,7 @@ export function ArticleView({
               <figcaption className={styles.cap}>
                 {article.leadCaption}
                 {article.leadCaption && lead.credit && ' '}
-                {lead.credit && <span className={styles.credit}>Photo: {lead.credit}</span>}
+                {lead.credit && <span className={styles.credit}>{creditLine(lead.credit)}</span>}
               </figcaption>
             )}
           </figure>

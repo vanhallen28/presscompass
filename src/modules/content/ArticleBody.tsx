@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { CloudImage } from '@/components/media/CloudImage';
 import type { Block, Doc, Inline, ListItem, Mark, TableRow } from '@/lib/doc/schema';
+import { creditLine } from '@/lib/media/credit';
 import styles from './article.module.css';
 import { ChartFigure } from './ChartFigure';
 import { YouTubeEmbed } from './YouTubeEmbed';
@@ -144,7 +145,7 @@ function blocks(content: (Block | ListItem)[], links: ArticleLinks | undefined, 
               <figcaption>
                 {block.attrs.caption}
                 {block.attrs.caption && item.credit && ' '}
-                {item.credit && <span className={styles.credit}>Photo: {item.credit}</span>}
+                {item.credit && <span className={styles.credit}>{creditLine(item.credit)}</span>}
               </figcaption>
             )}
           </figure>

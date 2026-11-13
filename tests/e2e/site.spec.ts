@@ -110,7 +110,15 @@ test('draws chart blocks with a table for screen readers', async ({ page }) => {
       ...READY_BODY.content,
       {
         type: 'chart',
-        attrs: { kind: 'bar', title: 'Annual food inflation', subtitle: 'Per cent', source: 'BPS', axis: 'Month', labels: ['May', 'Jun', 'Jul'], series: [{ name: 'Inflation', values: [4.1, 3.8, 2.1] }] },
+        attrs: {
+          kind: 'bar',
+          title: 'Annual food inflation in the twelve months to each month',
+          subtitle: 'Per cent, year on year, consumer prices of food and drink',
+          source: 'BPS',
+          axis: 'Month of the year',
+          labels: ['May', 'Jun', 'Jul'],
+          series: [{ name: 'Annual food inflation, per cent', values: [4.1, 3.8, 2.1] }],
+        },
       },
     ],
   };
@@ -118,8 +126,11 @@ test('draws chart blocks with a table for screen readers', async ({ page }) => {
   await page.goto(story.href);
   const chart = main(page).getByRole('figure').filter({ hasText: 'Annual food inflation' });
   await expect(chart.locator('svg rect')).toHaveCount(3);
-  await expect(chart.getByRole('table', { name: 'Annual food inflation. Per cent' })).toBeAttached();
+  await expect(chart.getByRole('table', { name: /^Annual food inflation in the twelve months to each month\. Per cent/ })).toBeAttached();
   await expect(chart).toContainText('Source: BPS');
+  // The hidden data table must not widen the page on a phone.
+  await page.setViewportSize({ width: 360, height: 800 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
 });
 
 test('publishes scheduled articles when the cron endpoint runs', async ({ page }) => {

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { creditLine } from '@/lib/media/credit';
 import { cloudinaryUrl, imageSources } from '@/lib/media/url';
 import { destroyAsset, fetchResource, publicIdFor, signParams, uploadPlan } from '@/modules/media/cloudinary';
 import { checkFile, MAX_BYTES, parseMediaDetails } from '@/modules/media/validate';
@@ -113,5 +114,15 @@ describe('validation', () => {
       caption: 'Keep the caption under 300 characters.',
       credit: 'Keep the credit under 120 characters.',
     });
+  });
+});
+
+describe('creditLine', () => {
+  it('reads as a photo credit unless the credit names its own kind', () => {
+    expect(creditLine('Rani/PressCompass')).toBe('Photo: Rani/PressCompass');
+    expect(creditLine('  Illustration: PressCompass ')).toBe('Illustration: PressCompass');
+    expect(creditLine('Graphics: BPS')).toBe('Graphics: BPS');
+    expect(creditLine('Maps of Java')).toBe('Photo: Maps of Java');
+    expect(creditLine('   ')).toBe('');
   });
 });
