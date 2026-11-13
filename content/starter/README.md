@@ -1,37 +1,38 @@
 # Konten awal PressCompass
 
-Sepuluh artikel penjelas (explainer dan analysis) berbahasa Inggris dengan ilustrasinya, untuk mengisi situs sebelum
-artikel redaksi sendiri terbit. Semuanya ditulis dari sumber publik yang dicantumkan di bagian **Sources** setiap artikel,
-dengan angka bertanggal. Ini bukan berita yang dikarang: periksa ulang angkanya bila artikel tetap tayang lama, karena
-data seperti status gunung api atau luas kebakaran berubah.
+Delapan belas artikel penjelas (explainer, analysis, feature) berbahasa Inggris dengan ilustrasinya, tiga di setiap rubrik,
+plus halaman About, Contact, dan Privacy policy, untuk mengisi situs sebelum artikel redaksi sendiri terbit. Semuanya
+ditulis dari sumber publik yang dicantumkan di bagian **Sources** setiap artikel, dengan angka bertanggal. Ini bukan berita
+yang dikarang: periksa ulang angkanya bila artikel tetap tayang lama, karena data seperti status gunung api, utang Whoosh,
+atau angka inflasi berubah.
 
-| Artikel | Rubrik | Gambar |
-|---|---|---|
-| How Indonesia keeps rice on the shelves | Business | `rice.jpg` |
-| Why Indonesia stopped selling raw nickel ore (dengan Chart) | Business | `nickel.jpg` |
-| How Indonesia's parliament works | Politics | `parliament.jpg` |
-| How Indonesia watches its 127 active volcanoes | Science | `volcano.jpg` |
-| Nusantara: where Indonesia's new capital stands | Politics | `nusantara.jpg` |
-| What BRICS membership means for Indonesia | World | `world.jpg` |
-| Why Indonesia's peatlands keep burning | Science | `haze.jpg` |
-| Indonesia's economy in 2025: what drove growth (dengan Chart) | Data | `economy.jpg` |
-| Where Indonesia's 290 million people live (dengan Chart) | Data | `population.jpg` |
-| Why Indonesia has three time zones | News | `timezones.jpg` |
+| Rubrik | Artikel |
+|---|---|
+| News | Why Indonesia has three time zones · How Indonesia goes home for Eid · How Indonesia marks Independence Day |
+| Politics | How Indonesia's parliament works · Nusantara: where Indonesia's new capital stands · How Indonesia elects its president (Chart) |
+| Business | How Indonesia keeps rice on the shelves · Why Indonesia stopped selling raw nickel ore (Chart) · Whoosh: the fast train and its debts |
+| World | What BRICS membership means for Indonesia · ASEAN welcomes its eleventh member, Timor-Leste · Indonesia and the North Natuna Sea |
+| Science | How Indonesia watches its 127 active volcanoes · Why Indonesia's peatlands keep burning · How many Komodo dragons are left |
+| Data | Indonesia's economy in 2025 (Chart) · Where Indonesia's 290 million people live (Chart) · Prices in Indonesia: inflation since 2020 (Chart) |
 
-Ilustrasi (1800 × 1200 JPEG) dibuat khusus untuk PressCompass, jadi bebas dipakai. Kreditnya
+Ilustrasi (1800 × 1200 JPEG, 18 berkas di `images/`) dibuat khusus untuk PressCompass, jadi bebas dipakai. Kreditnya
 **Illustration: PressCompass** dan tampil apa adanya di bawah gambar (kredit biasa tampil sebagai "Photo: …").
 
 ## Memasang
 
 ```bash
-npm run content:starter
+npm run check
+npm run content:starter -- --email alamat-kontak@anda
 ```
 
+- Sebelum menulis apa pun, perintah ini memeriksa `.env`, Supabase (dan migrasinya), serta kunci Cloudinary. Bila ada yang salah, ia berhenti dengan pesan cara memperbaikinya, dan tidak ada yang berubah.
 - Gambar diunggah ke Cloudinary (`presscompass/images/starter-*`) dan masuk ke **Media** dengan alt text, keterangan, dan kredit.
 - Rubrik News, Politics, Business, World, Science, Data dibuat bila belum ada. Rubrik yang sudah ada tidak diubah.
 - Penulis **PressCompass Desk** (Staff) dan tag dibuat bila belum ada.
-- Artikel langsung terbit dengan waktu terbit tersebar dalam 30 jam terakhir, masing-masing dengan satu versi awal di History.
-- Aman dijalankan ulang: artikel, gambar, rubrik, tag, dan penulis yang sudah ada dilewati.
+- Artikel langsung terbit dengan waktu terbit tersebar dalam dua hari terakhir, masing-masing dengan satu versi awal di History.
+- `--email` mengganti `[add your contact email here]` dengan alamat Anda dan menerbitkan About, Contact, Privacy policy. Tanpa `--email`, halaman itu masuk sebagai Draft. Halaman yang sudah Anda ubah di Newsroom tidak disentuh.
+- Aman dijalankan ulang: artikel, gambar, rubrik, tag, penulis, dan halaman yang sudah ada dilewati. Menjalankan ulang di proyek yang sudah berisi 10 artikel lama hanya menambah 8 artikel baru.
+- Bila `npm run dev` sedang berjalan dan `.env` berisi `CRON_SECRET`, situs lokal langsung diperbarui.
 - `npm run content:starter -- --draft` memasukkan semuanya sebagai Draft untuk diperiksa dulu di Newsroom.
 - `npm run content:starter -- --dry-run` hanya memeriksa berkas, tanpa menyentuh Supabase atau Cloudinary.
 

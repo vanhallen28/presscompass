@@ -232,7 +232,165 @@ def timezones():
         o.append(C(cx, cy, 4, '#c8432b'))
     return ''.join(o)
 
-SCENES = {'rice': rice, 'nickel': nickel, 'parliament': parliament, 'volcano': volcano, 'nusantara': nusantara, 'world': world, 'haze': haze, 'economy': economy, 'population': population, 'timezones': timezones}
+def mudik():
+    rnd = random.Random(21)
+    o = [f'<defs>{grad("sky", [(0, "#f2b98a"), (0.6, "#f7dcb6"), (1, "#f3e7cf")])}</defs>', R(0, 0, 600, 400, 'url(#sky)'), C(470, 120, 34, '#fbe9c9')]
+    o.append(P(f'M-20 200 L{ridge(rnd, 160, 20, 40)} L620 230 L-20 230Z', '#9aa88a'))
+    o.append(P(f'M-20 215 L{ridge(rnd, 190, 12, 50)} L620 240 L-20 240Z', '#7f9472'))
+    o += [R(96, 168, 26, 40, '#d9cdb5'), C(109, 168, 14, '#3f8a6c'), R(107, 140, 4, 16, '#d9cdb5'), C(109, 138, 3, '#3f8a6c')]
+    o.append(P('M0 240 L600 240 L600 400 L0 400Z', '#8fa178'))
+    o.append(P('M250 240 L350 240 L560 400 L40 400Z', '#5b5f66'))
+    o.append(P('M298 240 L302 240 L310 400 L290 400Z', '#e9e2d0', ' opacity="0.0"'))
+    for i in range(9):
+        t = i / 9; y = 244 + t * t * 150; w = 2 + t * 6
+        o.append(R(300 - w / 2, y, w, 4 + t * 12, '#f3ead7'))
+    o.append(P('M250 240 L246 240 L30 400 L40 400Z', '#e9e2d0'))
+    o.append(P('M350 240 L354 240 L570 400 L560 400Z', '#e9e2d0'))
+    cars = [(268, 252, 0.25, '#c8432b'), (318, 258, 0.3, '#2f5d8a'), (250, 280, 0.45, '#e8b04a'), (330, 290, 0.5, '#f2f0ea'), (205, 330, 0.75, '#3f8a6c'), (370, 340, 0.8, '#c8432b'), (150, 375, 1.0, '#2f5d8a'), (410, 382, 1.05, '#d9a441')]
+    for x, y, s, c in cars:
+        w, h = 46 * s, 22 * s
+        o += [R(x - w / 2, y - h, w, h, c, ' rx="3"'), R(x - w / 2 + 5 * s, y - h - 10 * s, w - 10 * s, 12 * s, c, ' rx="3"'), R(x - w / 2 + 7 * s, y - h - 8 * s, w - 14 * s, 8 * s, '#cfe0ea', ' opacity="0.85"')]
+        o += [C(x - w / 3, y, 4 * s, '#2b2b2b'), C(x + w / 3, y, 4 * s, '#2b2b2b'), R(x - w / 2 + 2, y - h + 4 * s, 4 * s, 3 * s, '#ffe7a3'), R(x + w / 2 - 2 - 4 * s, y - h + 4 * s, 4 * s, 3 * s, '#ffe7a3')]
+    bx, by = 470, 300
+    o += [R(bx - 40, by - 54, 80, 54, '#4d7fa8', ' rx="5"'), *[R(bx - 34 + i * 17, by - 46, 13, 14, '#dfeaf1') for i in range(4)], C(bx - 24, by, 7, '#2b2b2b'), C(bx + 24, by, 7, '#2b2b2b')]
+    return ''.join(o)
+
+def merdeka():
+    o = [f'<defs>{grad("sky", [(0, "#9cc7e3"), (1, "#e8f1f4")])}</defs>', R(0, 0, 600, 400, 'url(#sky)')]
+    for cx, cy, r in [(90, 70, 18), (112, 62, 24), (138, 70, 16), (420, 48, 14), (440, 42, 20)]: o.append(C(cx, cy, r, '#ffffff', ' opacity="0.9"'))
+    o.append(R(0, 270, 600, 130, '#7fa36a'))
+    o.append(P('M150 270 L150 200 L450 200 L450 270Z', '#f4f1ea'))
+    o.append(P('M136 200 L300 160 L464 200Z', '#e6e0d2'))
+    for x in range(168, 440, 32): o.append(R(x, 206, 12, 64, '#ffffff'))
+    o += [R(130, 270, 340, 8, '#d9d2c2')]
+    o += [R(296, 40, 6, 232, '#8a8a8a'), C(299, 38, 5, '#d9a441')]
+    wave = 'M302 52 C340 44 370 64 410 56 L410 82 C370 90 340 70 302 78Z'
+    o += [P(wave, '#c8382e'), P('M302 78 C340 70 370 90 410 82 L410 108 C370 116 340 96 302 104Z', '#f6f4ef')]
+    for i in range(0, 600, 30):
+        o.append(P(f'M{i} 150 Q{i + 15} 164 {i + 30} 150', 'none', ' stroke="#8a8a8a" stroke-width="1"'))
+        o.append(P(f'M{i + 4} 152 L{i + 15} 172 L{i + 26} 152Z', '#c8382e' if (i // 30) % 2 == 0 else '#f6f4ef'))
+    rnd = random.Random(8)
+    for row, y in enumerate([330, 352, 374]):
+        for x in range(10, 600, 22):
+            xx = x + (11 if row % 2 else 0) + rnd.uniform(-3, 3)
+            c = rnd.choice(['#3f3a33', '#5a4b3c', '#2f2a26'])
+            o += [C(xx, y - 10, 6, c), R(xx - 8, y - 4, 16, 26, rnd.choice(['#f6f4ef', '#c8382e', '#e9e2d0', '#d9d2c2']), ' rx="5"')]
+    return ''.join(o)
+
+def ballot():
+    o = [f'<defs>{grad("bg", [(0, "#e6e1d6"), (1, "#d6d0c3")])}</defs>', R(0, 0, 600, 400, 'url(#bg)')]
+    o.append(R(0, 300, 600, 100, '#b9b1a1'))
+    o += [P('M180 160 L420 160 L440 310 L160 310Z', '#f6f4ef'), P('M180 160 L420 160 L410 140 L190 140Z', '#e4ded0'), R(250, 146, 100, 8, '#2b2b2b', ' rx="3"')]
+    o.append(R(160, 300, 280, 10, '#d9d2c2'))
+    o += [R(230, 210, 140, 40, '#0f1e33', ' rx="4"'), P('M246 230 L262 230', 'none', ' stroke="#f6f4ef" stroke-width="4"')]
+    for i, c in enumerate(['#c8432b', '#3f8a6c', '#2f5d8a']):
+        o.append(R(280 + i * 26, 222, 18, 18, c, ' rx="3"'))
+    o += [P('M270 60 L340 54 L346 130 L276 136Z', '#ffffff', ' stroke="#c9c2b2" stroke-width="1.5"'), P('M292 92 L304 106 L328 74', 'none', ' stroke="#c8432b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"')]
+    for i in range(3):
+        o.append(R(282, 112 + 0 * i, 0, 0, '#000'))
+    o += [P('M470 330 C470 280 486 250 500 250 C514 250 520 270 516 300 L530 300 C546 300 548 330 530 336 L480 344Z', '#c99a72'), R(496, 232, 14, 30, '#c99a72', ' rx="7"'), R(496, 232, 14, 12, '#5b3a8c', ' rx="6"')]
+    return ''.join(o)
+
+def asean():
+    o = [f'<defs>{grad("sea", [(0, "#2f5d78"), (1, "#1d3f57")])}</defs>', R(0, 0, 600, 400, 'url(#sea)')]
+    for y in range(20, 400, 26):
+        o.append(P(f'M0 {y} ' + ' '.join(f'Q{x + 15} {y - 5} {x + 30} {y}' for x in range(0, 600, 30)), 'none', ' stroke="#4b7b95" stroke-width="1" opacity="0.4"'))
+    cx, cy, r = 300, 200, 130
+    pts = [(cx + r * math.sin(math.radians(i * 360 / 11)), cy - r * math.cos(math.radians(i * 360 / 11))) for i in range(11)]
+    for i, (x, y) in enumerate(pts):
+        for j in range(i + 1, 11):
+            if (j - i) in (1, 10): o.append(f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{pts[j][0]:.1f}" y2="{pts[j][1]:.1f}" stroke="#d9c58a" stroke-width="2" opacity="0.7"/>')
+    for i, (x, y) in enumerate(pts):
+        new = i == 10
+        o.append(C(x, y, 22 if new else 18, '#f2c14e' if new else '#f6f4ef'))
+        o.append(C(x, y, 10 if new else 8, '#c8432b' if new else '#2f5d78'))
+    o += [C(cx, cy, 52, '#f6f4ef', ' opacity="0.12"'), C(cx, cy, 34, '#f6f4ef', ' opacity="0.18"')]
+    for a in range(10):
+        ang = math.radians(a * 36)
+        o.append(P(f'M{cx} {cy} L{cx + 30*math.cos(ang - 0.12):.1f} {cy + 30*math.sin(ang - 0.12):.1f} L{cx + 30*math.cos(ang + 0.12):.1f} {cy + 30*math.sin(ang + 0.12):.1f}Z', '#f2c14e', ' opacity="0.85"'))
+    return ''.join(o)
+
+def natuna():
+    rnd = random.Random(3)
+    o = [f'<defs>{grad("sky", [(0, "#bcd6e4"), (1, "#eef3ef")])}{grad("sea", [(0, "#3f7a8f"), (1, "#24516a")])}</defs>', R(0, 0, 600, 400, 'url(#sky)')]
+    for cx, cy, r in [(480, 70, 20), (502, 62, 26), (528, 72, 16)]: o.append(C(cx, cy, r, '#ffffff', ' opacity="0.9"'))
+    o.append(R(0, 190, 600, 210, 'url(#sea)'))
+    for y in range(200, 400, 12):
+        o.append(P(f'M0 {y} ' + ' '.join(f'Q{x + 12} {y - 4} {x + 24} {y}' for x in range(0, 600, 24)), 'none', ' stroke="#6f9fb0" stroke-width="1.1" opacity="0.55"'))
+    o += [P('M40 192 Q90 150 150 160 Q190 150 230 192Z', '#5f8a55'), P('M70 192 Q100 168 130 176 Q160 168 180 192Z', '#719c63'), P('M250 192 Q275 178 300 192Z', '#6f8f5a')]
+    o.append(P('M0 250 L600 300', 'none', ' stroke="#f2c14e" stroke-width="2.5" stroke-dasharray="10 8" opacity="0.9"'))
+    o += [P('M380 268 L500 268 L488 290 L392 290Z', '#e9e5dc'), R(420, 246, 46, 22, '#f6f4ef'), R(430, 236, 22, 10, '#d9d2c2'), R(440, 222, 3, 14, '#8a8a8a'), R(392, 276, 96, 4, '#c8382e')]
+    for x, y, s in [(120, 330, 1.0), (230, 352, 0.8), (520, 360, 0.9)]:
+        o += [P(f'M{x - 26*s:.1f} {y} L{x + 26*s:.1f} {y} L{x + 18*s:.1f} {y + 10*s:.1f} L{x - 18*s:.1f} {y + 10*s:.1f}Z', '#a0522d'), R(x - 2 * s, y - 30 * s, 2.5 * s, 30 * s, '#5b4a39'), P(f'M{x:.1f} {y - 28*s:.1f} L{x + 20*s:.1f} {y - 6*s:.1f} L{x:.1f} {y - 6*s:.1f}Z', '#f2e8d2')]
+    return ''.join(o)
+
+def whoosh():
+    rnd = random.Random(14)
+    o = [f'<defs>{grad("sky", [(0, "#cfe3ee"), (1, "#f3efe4")])}{grad("train", [(0, "#ffffff"), (1, "#d9dde2")], 0, 1)}</defs>', R(0, 0, 600, 400, 'url(#sky)')]
+    o.append(P(f'M-20 200 L{ridge(rnd, 140, 26, 40)} L620 240 L-20 240Z', '#9fb3a6'))
+    o.append(P(f'M-20 230 L{ridge(rnd, 190, 14, 50)} L620 260 L-20 260Z', '#86a07f'))
+    colors = ['#93ab5a', '#a7bb67', '#86a352', '#b7c574']
+    for i, y in enumerate(range(250, 400, 22)): o.append(R(0, y, 600, 22, colors[i % 4]))
+    for i, y in enumerate(range(250, 400, 22)): o.append(P(f'M0 {y} L600 {y}', 'none', ' stroke="#e9edc9" stroke-width="1.2" opacity="0.6"'))
+    o.append(R(0, 232, 600, 14, '#c9c3b6'))
+    for x in range(30, 600, 80): o += [R(x, 246, 14, 160, '#b9b2a4'), R(x - 6, 246, 26, 6, '#a9a293')]
+    o.append(P('M60 232 L470 232 C520 232 560 220 580 204 L580 196 C560 188 520 186 480 186 L60 186Z', 'url(#train)'))
+    o.append(P('M60 214 L470 214 C510 214 545 208 570 200', 'none', ' stroke="#c8382e" stroke-width="5"'))
+    for x in range(80, 440, 34): o.append(R(x, 194, 24, 12, '#2c3e50', ' rx="2"'))
+    o.append(P('M486 192 C520 190 548 192 566 198 L560 204 C540 200 510 198 486 200Z', '#2c3e50'))
+    for i, y in enumerate([196, 208, 222]): o.append(P(f'M{10 + i*6} {y} L{50 - i*4} {y}', 'none', ' stroke="#8fa3b0" stroke-width="2.4" stroke-linecap="round" opacity="0.8"'))
+    return ''.join(o)
+
+def komodo():
+    rnd = random.Random(9)
+    o = [f'<defs>{grad("sky", [(0, "#a7cde0"), (1, "#f0ead8")])}{grad("sea", [(0, "#5aa0b0"), (1, "#3f8296")])}</defs>', R(0, 0, 600, 400, 'url(#sky)')]
+    o.append(R(0, 150, 600, 60, 'url(#sea)'))
+    o.append(P(f'M-20 190 Q120 110 230 150 Q330 90 460 140 Q540 120 620 160 L620 220 L-20 220Z', '#b7a26c'))
+    o.append(P(f'M-20 215 Q150 170 300 200 Q450 175 620 205 L620 400 L-20 400Z', '#cdb57a'))
+    for x, y, s in [(90, 190, 1.0), (510, 186, 0.9), (560, 200, 0.7)]:
+        o.append(R(x - 2 * s, y - 70 * s, 4 * s, 70 * s, '#6d5a43'))
+        for ang in range(0, 360, 30):
+            dx, dy = math.cos(math.radians(ang)) * 18 * s, math.sin(math.radians(ang)) * 18 * s
+            o.append(P(f'M{x:.1f} {y - 70*s:.1f} L{x + dx:.1f} {y - 70*s + dy:.1f}', 'none', f' stroke="#5f7a45" stroke-width="{3*s:.1f}" stroke-linecap="round"'))
+    for i in range(40):
+        x, y = rnd.uniform(0, 600), rnd.uniform(230, 400)
+        o.append(P(f'M{x:.1f} {y:.1f} l2 -8 l2 8', 'none', ' stroke="#a8925c" stroke-width="1.2"'))
+    body = '#6a6152'
+    o.append(P('M150 330 C220 300 300 296 360 304 C400 310 430 316 452 322 C470 326 484 330 480 340 C470 348 440 346 410 342 C380 340 330 344 280 348 C220 352 180 352 120 360 C80 366 40 372 20 374 C50 362 100 346 150 330Z', body))
+    o.append(P('M452 322 C470 314 492 314 506 322 C514 328 512 336 500 338 C490 340 482 338 480 340Z', '#5d5547'))
+    o.append(P('M506 330 L540 334 L506 336', 'none', ' stroke="#d9a441" stroke-width="2" stroke-linecap="round"'))
+    o += [C(492, 322, 2.2, '#1f1c18')]
+    for x, d in [(250, -1), (300, 1), (390, -1), (430, 1)]:
+        o.append(P(f'M{x} 340 L{x + 8*d} 364 L{x + 20*d} 368', 'none', f' stroke="{body}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"'))
+    for i in range(18):
+        x = 180 + i * 16
+        o.append(C(x, 318 + rnd.uniform(-4, 4), 2, '#7d725f'))
+    return ''.join(o)
+
+def inflation():
+    o = [f'<defs>{grad("bg", [(0, "#f3e7cf"), (1, "#ead9b8")])}</defs>', R(0, 0, 600, 400, 'url(#bg)')]
+    o += [P('M40 60 L560 60 L590 110 L10 110Z', '#c8432b'), *[P(f'M{10 + i*58} 110 Q{39 + i*58} 130 {68 + i*58} 110Z', '#c8432b') for i in range(10)]]
+    for i in range(0, 600, 58): o.append(P(f'M{10 + i} 60 L{40 + i} 110', 'none', ' stroke="#f6f4ef" stroke-width="10" opacity="0.5"'))
+    o.append(R(40, 250, 520, 150, '#8a6a48'))
+    o.append(R(30, 240, 540, 16, '#a07a52'))
+    baskets = [(110, '#d23a2a', 'chili'), (240, '#a8456b', 'shallot'), (370, '#f2efe6', 'egg'), (490, '#e0b04a', 'rice')]
+    rnd = random.Random(4)
+    for x, c, kind in baskets:
+        o.append(P(f'M{x - 54} 230 L{x + 54} 230 L{x + 44} 280 L{x - 44} 280Z', '#b58b55'))
+        for row in range(3):
+            o.append(P(f'M{x - 50 + row*3} {244 + row*12} L{x + 50 - row*3} {244 + row*12}', 'none', ' stroke="#8f6a3e" stroke-width="2"'))
+        for k in range(16):
+            px, py = x + rnd.uniform(-44, 44), 226 + rnd.uniform(-14, 4)
+            if kind == 'chili': o.append(P(f'M{px:.1f} {py:.1f} q8 -4 14 4', 'none', f' stroke="{c}" stroke-width="5" stroke-linecap="round"'))
+            elif kind == 'rice': o.append(C(px, py, 3, c))
+            else: o.append(C(px, py, 7 if kind == 'egg' else 6, c))
+        o += [R(x - 22, 170, 44, 26, '#f6f4ef', ' rx="3"'), P(f'M{x} 196 L{x} 212', 'none', ' stroke="#6b6b6b" stroke-width="1.5"')]
+        o.append(P(f'M{x - 12} 188 L{x} 176 L{x + 12} 188', 'none', ' stroke="#c8432b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"'))
+    o.append(P('M60 350 L180 330 L300 340 L420 300 L540 270', 'none', ' stroke="#f6f4ef" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"'))
+    o.append(P('M528 262 L548 266 L536 284Z', '#f6f4ef'))
+    return ''.join(o)
+
+SCENES = {'rice': rice, 'nickel': nickel, 'parliament': parliament, 'volcano': volcano, 'nusantara': nusantara, 'world': world, 'haze': haze, 'economy': economy, 'population': population, 'timezones': timezones, 'mudik': mudik, 'merdeka': merdeka, 'ballot': ballot, 'asean': asean, 'natuna': natuna, 'whoosh': whoosh, 'komodo': komodo, 'inflation': inflation}
 
 if __name__ == '__main__':
     import sys, os
