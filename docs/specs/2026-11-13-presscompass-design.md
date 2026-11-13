@@ -385,7 +385,7 @@ Keputusan pemilik 13 November 2026: semua gambar lewat Cloudinary, sama dengan p
 - asisten AI di editor;
 - pengiriman newsletter;
 - akun pembaca;
-- iklan (wajib Vercel Pro).
+- menayangkan iklan (wajib Vercel Pro; sistem iklan dibangun di Rencana 5 dengan sakelar mati).
 
 **Di luar cakupan:** paywall, komentar, multi-bahasa, aplikasi mobile, plugin unggahan.
 
@@ -397,6 +397,8 @@ Catatan lingkup v0.2.0: blok gambar dan gambar utama pindah ke Rencana 3 (butuh 
 
 Catatan lingkup v0.3.0: pustaka media, pemilih gambar, gambar utama dengan keterangan, blok gambar, foto penulis, dan aturan terbit gambar selesai. Gambar tampil di pratinjau Newsroom; situs publik yang menampilkannya datang di Rencana 4.
 
+Catatan urutan (13 November, permintaan pemilik): iklan, editor ala WordPress dengan skor SEO, dan indexing otomatis didahulukan sebagai Rencana 5, 6, 7; "Semua bisa diedit" menjadi Rencana 8 dan Rilis Rencana 9. Halaman statis dasar ikut Rencana 5 karena AdSense memeriksa halaman Privacy policy, About, dan Contact. Iklan tetap butuh Vercel Pro saat dinyalakan (§4); kodenya sudah bisa diisi dan diperiksa selama sakelar mati.
+
 Catatan lingkup v0.4.0: beranda otomatis (lead + Top stories, baris per rubrik di navigasi, Opinion), artikel, rubrik, penulis, tag (dengan halaman berikutnya), cari, 404, header, footer, pita Latest, sakelar tema, blok Chart, endpoint cron dan revalidasi selesai. Halaman statis (`/{page}`), blok Most read + Newsletter, data band, dan teks footer yang bisa diedit pindah ke Rencana 5 (bersama page builder dan penyusun beranda); Most read dari Search Console tetap Rencana 7. Panduan Supabase Cron 5 menit dipindah dari Rencana 7 ke v0.4.0 (`docs/ops/setup.md` langkah F), karena terbit terjadwal membutuhkannya sekarang; Rencana 7 menambahkan pekerjaan indexing ke endpoint yang sama.
 
 | Rencana | Isi | Versi |
@@ -405,10 +407,11 @@ Catatan lingkup v0.4.0: beranda otomatis (lead + Top stories, baris per rubrik d
 | 2. Newsroom inti | kerangka CMS, Rubrik, Tag, Penulis, Artikel (editor blok, alur status, jadwal, autosave, revisi, pratinjau) | v0.2.0 |
 | 3. Media Cloudinary | unggah bertanda tangan, transformasi masuk, `srcset` Cloudinary (`CloudImage`), pustaka dan pemilih media, gambar utama + keterangan, blok gambar, aturan terbit "gambar utama dengan alt" | v0.3.0 |
 | 4. Situs publik | beranda, artikel, rubrik, penulis, tag, halaman, cari, 404, header, footer, pita Latest, mode gelap, cache bertag, blok Chart (SVG), endpoint cron untuk terbit terjadwal + revalidasi | v0.4.0 |
-| 5. Semua bisa diedit | penyusun beranda (termasuk data band dan Most read + Newsletter), page builder dan halaman statis, navigasi dan footer, pengaturan situs, newsletter, form kontak, Pembaca | v0.5.0 |
-| 6. SEO | metadata, JSON-LD, sitemap + news, RSS, robots, OG otomatis, redirect, log 404, panel SEO dan Writing check | v0.6.0 |
-| 7. Mesin Indexing + Dashboard SEO | antrean, adapter Google dan IndexNow (lewat endpoint cron yang sudah dipanggil Supabase Cron), status indeks, Search Analytics, dashboard, pemeriksa tautan | v0.7.0 |
-| 8. Rilis | header keamanan, cadangan mingguan, Lighthouse, runbook, domain, Search Console, rilis produksi | v1.0.0 |
+| 5. Iklan + halaman statis | halaman **Ads** di Newsroom (AdSense: Auto ads dan unit Display, In-article, In-feed, Multiplex; Google Ad Manager; Meta Pixel; kode jaringan lain di `<head>`, akhir `<body>`, dan slot; tag verifikasi; `ads.txt`), 8 slot tetap tanpa pergeseran tata letak, banner persetujuan + Consent Mode v2, sakelar utama mati bawaan; **Pages** (halaman statis dengan editor blok) + draf About, Contact, Privacy policy | v0.5.0 |
+| 6. Editor ala WordPress + skor SEO | panel samping editor bergaya WordPress, panel skor SEO dan keterbacaan berdasarkan pedoman Google (judul, meta, keyphrase, struktur, tautan, gambar), metadata, JSON-LD, sitemap + news, RSS, robots, OG otomatis, log 404 | v0.6.0 |
+| 7. Indexing otomatis + Dashboard SEO | antrean, adapter Search Console dan IndexNow (lewat endpoint cron yang sudah dipanggil Supabase Cron), status indeks (URL Inspection), Search Analytics, dashboard, pemeriksa tautan | v0.7.0 |
+| 8. Semua bisa diedit | penyusun beranda (termasuk data band dan Most read + Newsletter), page builder penuh, navigasi dan footer, pengaturan situs, newsletter, form kontak, Pembaca | v0.8.0 |
+| 9. Rilis | header keamanan, cadangan mingguan, Lighthouse, runbook, domain, Search Console, rilis produksi | v1.0.0 |
 
 ## 18. Setup dari pemilik
 

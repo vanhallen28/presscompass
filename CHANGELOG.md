@@ -1,5 +1,21 @@
 # Riwayat versi
 
+## v0.5.0 · 13 November 2026 · Iklan dan halaman statis (Rencana 5)
+
+- **Ads** (menu baru Site, Ads di Newsroom), satu tempat untuk semua kode iklan dan pelacakan:
+  - **Google AdSense:** ID penerbit (`ca-pub-`, `pub-`, atau baris ads.txt juga diterima), Auto ads, dan unit Display, In-article, In-feed, Multiplex di slot;
+  - **Google Ad Manager (GPT):** path unit dan ukuran per slot;
+  - **Meta Pixel:** PageView di setiap halaman;
+  - **kode jaringan lain** (Adsterra, Media.net, PropellerAds, Google Tag Manager, dan sejenisnya) untuk `<head>`, akhir `<body>`, dan slot;
+  - **tag verifikasi** `<meta>` jaringan iklan, dan **`/ads.txt`** dengan baris AdSense otomatis.
+- **8 slot iklan tetap:** bawah header, beranda, daftar cerita, dua di dalam artikel (setelah paragraf pilihan), akhir artikel, kolom samping artikel, atas footer. Tinggi per slot untuk HP dan layar lebar, jadi halaman tidak bergeser saat iklan dimuat; 0 menyembunyikan slot.
+- **Banner persetujuan cookie** dengan dua pilihan setara (Accept all, Necessary only) dan **Cookie settings** di footer. Sebelum pembaca setuju tidak ada kode Google, Meta, atau jaringan lain yang dimuat; Google Consent Mode v2 terpasang.
+- **Sakelar utama mati bawaan.** Vercel Hobby hanya untuk penggunaan non-komersial: pindah ke Vercel Pro sebelum menyalakan iklan. Selama mati, tag verifikasi AdSense dan `ads.txt` tetap aktif supaya situs bisa diajukan ke AdSense dulu.
+- **Pages** (menu baru): halaman statis seperti About, Contact, Privacy policy dengan editor blok yang sama dengan artikel, Draft/Published, alamat `/{alamat}`, dan tautan otomatis di footer.
+- **Konten awal:** `npm run content:starter` kini juga menambahkan draf About, Contact, dan Privacy policy (lengkapi email kontak dan periksa teksnya sebelum terbit).
+- **Langkah tambahan:** jalankan `npm run db:push` (migrasi baru `20261117000100_ads_pages.sql`) sebelum `git push`, lalu `npm run content:starter` untuk draf halaman. Panduan AdSense dan iklan: `docs/ops/setup.md` langkah H.
+- Tes: 128 unit, 48 database, 64 E2E (iklan diuji dengan skrip Google dan Meta tiruan, tanpa jaringan).
+
 ## v0.4.1 · 13 November 2026 · Konten awal
 
 - **Paket konten awal** di `content/starter`: 10 artikel penjelas berbahasa Inggris (beras, nikel, DPR/DPD/MPR, gunung api, Nusantara, BRICS, kebakaran gambut, ekonomi 2025, penduduk per provinsi, zona waktu) dengan sumber bertanggal, Key figures, dan 3 Chart, plus 10 ilustrasi 1800 × 1200 buatan sendiri.
