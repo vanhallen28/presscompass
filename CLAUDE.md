@@ -37,6 +37,7 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - The stored body is the editor's JSON restricted to `src/lib/doc/schema.ts`. Four places must agree when a block is
   added or changed: the schema, `src/lib/doc/sanitize.ts` (runs on every save), the Tiptap extensions in
   `src/components/newsroom/editor/extensions.ts`, and `src/modules/content/ArticleBody.tsx` (renders it, no raw HTML).
+  New blocks also go into the + inserter and / command list (`BLOCKS` in `src/components/newsroom/editor/BlockMenu.tsx`).
 - ProseMirror keeps attributes in null-prototype objects, which Server Action arguments drop: the editor sends
   `JSON.parse(JSON.stringify(editor.getJSON()))`.
 - Saving goes through the SQL function `save_article` (version check, slug, relations, revision) via `prepareSave()`.
@@ -71,6 +72,23 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 - Client JavaScript on the site only for the theme switch, share buttons, and (while ads are on) the consent banner and ad
   loaders; the menu is a `popover`, search a GET form.
 - System endpoints (`/api/cron/run`, `/api/revalidate`) check `CRON_SECRET` with `checkCronAuth`.
+
+## SEO (v0.6.0)
+
+- `src/modules/seo/`: pure analysis (`analysis.ts`, `readability.ts`, `writing.ts`, `snippet.ts`, `words.ts`, `structure.ts`) runs in the
+  editor on every change and on the server in `prepareSave` (scores stored in `articles.seo.scores`, never taken from the browser).
+  A new check needs a test in `tests/unit/seo-analysis.test.ts`; keep the texts as advice ("Add the keyphrase to ..."), never blocking.
+- `articles.seo` = `{ title, description, keyphrase, related, canonical, noindex, ogMediaId, scores }` (`article.ts` reads and checks it).
+- Site-wide settings live in `layouts` key `seo` (`settings.ts`, Save writes draft and published). Indexing is off by default:
+  `robots()` in `metadata.ts` gives noindex unless Vercel Production and `indexing` are both true.
+- Every site route builds its metadata with `metaContext()` + `metadata.ts`, and its structured data with `jsonld.ts` rendered by
+  `JsonLd` (a data block: React does not warn about it). Article pages: canonical, Open Graph `article`, social image
+  (`/og/{id}?v=` from `next/og`, fonts in `src/fonts/og/` as static WOFF: Satori reads neither WOFF2 nor variable fonts).
+- XML: `xml.ts` (pure) and `feeds.ts` (`/sitemap.xml`, `/sitemaps/[file]`, `/news-sitemap.xml`, `/feed.xml`, `/[section]/feed.xml`).
+  Sitemaps leave out noindex articles and articles with a canonical elsewhere (`article_in_sitemap()`); `lastmod` is the Major update
+  or first publication. `robots.txt` is a route handler (extra lines from settings), `Disallow: /` outside Production.
+- 404 log: the root `not-found.tsx` renders `NotFoundBeacon`, which posts to `/api/not-found` (secret key, `log_not_found()`).
+  Manual redirects go through `missing(path)`; `[section]/[slug]/[...rest]` catches deeper addresses so they can redirect too.
 
 ## Ads and consent
 
