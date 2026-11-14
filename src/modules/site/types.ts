@@ -32,6 +32,12 @@ export type ArticlePage = Card & {
   links: { id: string; title: string; slug: string; section: string | null }[];
   related: Card[];
   more: Card[];
+  /** SEO settings from the editor (v0.6.0). */
+  seo: { title: string; description: string; canonical: string; noindex: boolean; keyphrase: string };
+  /** The image chosen for social cards, or null for the automatic card. */
+  ogImage: SiteImage | null;
+  /** Major update or first publication: what readers and search engines see as the last change. */
+  modifiedAt: string;
 };
 
 export type Home = { top: Card[]; sections: (SiteSection & { articles: Card[] })[]; opinion: Card[] };

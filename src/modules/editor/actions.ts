@@ -5,10 +5,13 @@ import { redirect } from 'next/navigation';
 import { UUID } from '@/lib/doc/schema';
 import { sanitizeDoc } from '@/lib/doc/sanitize';
 import { bodyMediaIds, docText, readingMinutes, wordCount } from '@/lib/doc/text';
+import { siteUrl } from '@/lib/env';
 import { createSessionClient } from '@/lib/supabase/clients';
 import { formatWib } from '@/lib/time';
 import { requireStaff } from '@/modules/auth/staff';
 import { mediaByIds } from '@/modules/media/queries';
+import { readArticleSeo } from '@/modules/seo/article';
+import { getSeoSettings } from '@/modules/seo/queries';
 import { refreshArticles } from '@/modules/site/invalidate';
 import { type FieldErrors, parseArticleInput } from './input';
 import { type ArticleListRow, getRevision, listArticles } from './queries';
@@ -64,13 +67,21 @@ export async function saveArticle(raw: unknown, intent: Intent): Promise<SaveRes
   if (readError) return { ok: false, message: `The article could not be saved. ${readError.message}` };
   if (!current) return { ok: false, message: 'This article no longer exists.' };
 
-  const media = await mediaByIds([input.value.leadMediaId, ...bodyMediaIds(sanitizeDoc(input.value.body))]);
+  const [media, settings] = await Promise.all([mediaByIds([input.value.leadMediaId, ...bodyMediaIds(sanitizeDoc(input.value.body))]), getSeoSettings()]);
+  // Other articles with the same keyphrase or SEO title count against the score, as in the editor's panel.
+  const { data: usage } = await supabase.rpc('article_seo_lookup', { p_id: input.value.id, p_keyphrase: input.value.seo.keyphrase, p_title: input.value.seo.title || input.value.title });
+  const counts = usage as { keyphrase: unknown[]; title: unknown[] } | null;
   const plan = prepareSave({
     input,
     current: current as { status: ArticleStatus; published_at: string | null; scheduled_at: string | null },
     intent,
     now: new Date(),
     media,
+    scoring: {
+      siteHost: new URL(siteUrl()).hostname.replace(/^www\./, ''),
+      titleTemplate: settings.titleTemplate,
+      usage: counts ? { keyphrase: counts.keyphrase?.length ?? 0, title: counts.title?.length ?? 0 } : null,
+    },
   });
   if (!plan.ok) return { ok: false, errors: plan.errors };
 
@@ -204,6 +215,7 @@ export async function restoreRevision(form: FormData) {
   for (const key of ['title', 'standfirst', 'body', 'type', 'kicker_label', 'is_breaking', 'sources', 'section_id', 'lead_media_id', 'lead_caption'] as const) {
     if (key in snap) fields[key] = (snap as Record<string, unknown>)[key];
   }
+  if ('seo' in snap) fields.seo = readArticleSeo((snap as Record<string, unknown>).seo);
   const body = sanitizeDoc(snap.body);
   const text = docText(body);
   Object.assign(fields, { body, body_text: text, word_count: wordCount(text), reading_minutes: readingMinutes(wordCount(text)) });

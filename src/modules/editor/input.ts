@@ -1,5 +1,6 @@
 import { UUID } from '@/lib/doc/schema';
 import { isSlug } from '@/lib/slug';
+import { type ArticleSeo, parseSeoInput } from '@/modules/seo/article';
 
 // Checks what the editor in the browser sends before anything is saved. Shape problems (wrong
 // types, unknown ids) reject the request; content problems come back as messages per field.
@@ -39,6 +40,7 @@ export type ArticleInput = {
   majorUpdate: boolean;
   leadMediaId: string | null;
   leadCaption: string;
+  seo: ArticleSeo;
 };
 
 export type InputField = 'title' | 'slug' | 'kicker' | 'standfirst' | 'sources';
@@ -81,8 +83,10 @@ export function parseArticleInput(raw: unknown): ParseResult {
   ) {
     return { ok: false, error: UNEXPECTED };
   }
+  const seo = parseSeoInput(r.seo);
+  if (!seo.ok) return { ok: false, error: UNEXPECTED };
 
-  const errors: FieldErrors = {};
+  const errors: FieldErrors = { ...seo.errors };
   const title = (r.title as string).trim();
   const slug = (r.slug as string).trim();
   const kicker = (r.kicker as string).trim();
@@ -132,6 +136,7 @@ export function parseArticleInput(raw: unknown): ParseResult {
       majorUpdate: r.majorUpdate as boolean,
       leadMediaId: (r.leadMediaId as string | null)?.toLowerCase() ?? null,
       leadCaption,
+      seo: seo.value,
     },
   };
 }

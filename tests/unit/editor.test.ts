@@ -182,6 +182,29 @@ describe('parseArticleInput', () => {
   });
 });
 
+describe('article SEO input', () => {
+  const seo = (over: Record<string, unknown> = {}) => ({ title: '', description: '', keyphrase: '', related: [], canonical: '', noindex: false, ogMediaId: null, ...over });
+
+  it('defaults to empty settings when the editor sends none, and trims what it sends', () => {
+    const none = parseArticleInput(raw());
+    expect(none.ok && none.value.seo).toEqual({ title: '', description: '', keyphrase: '', related: [], canonical: '', noindex: false, ogMediaId: null });
+    const sent = parseArticleInput(raw({ seo: seo({ keyphrase: '  rice   prices ', related: ['Bulog', ' bulog ', 'Bulog', ''] }) }));
+    expect(sent.ok && sent.value.seo).toMatchObject({ keyphrase: 'rice prices', related: ['Bulog', 'bulog'] });
+  });
+
+  it('reports long fields and bad canonical addresses, and refuses malformed settings', () => {
+    const result = parseArticleInput(raw({ seo: seo({ title: 'x'.repeat(121), canonical: 'example.org/page', related: ['a', 'b', 'c', 'd', 'e'] }) }));
+    expect(result.ok && result.errors).toEqual({
+      seoTitle: 'Keep the SEO title under 120 characters.',
+      canonical: 'Use a full address that starts with https://, or leave it empty.',
+      keyphrase: 'Add up to 4 related keyphrases.',
+    });
+    expect(parseArticleInput(raw({ seo: seo({ noindex: 'yes' }) })).ok).toBe(false);
+    expect(parseArticleInput(raw({ seo: seo({ ogMediaId: 'nope' }) })).ok).toBe(false);
+    expect(parseArticleInput(raw({ seo: 'x' })).ok).toBe(false);
+  });
+});
+
 describe('prepareSave', () => {
   const current = { status: 'draft' as const, published_at: null, scheduled_at: null };
   const parsed = (over: Record<string, unknown> = {}) => {
@@ -216,6 +239,18 @@ describe('prepareSave', () => {
       ok: false,
       errors: { standfirst: 'Add a standfirst: one or two sentences under the headline.', body: 'The article needs at least 150 words. It has 0.' },
     });
+  });
+
+  it('stores the SEO settings with scores worked out on the server', () => {
+    const input = parsed({ seo: { title: '', description: '', keyphrase: 'rice prices', related: [], canonical: '', noindex: false, ogMediaId: null, scores: { seo: 100, readability: 100 } } });
+    const plan = prepareSave({ input, current, intent: 'save', now: NOW, media: MEDIA, scoring: { siteHost: 'presscompass.site', titleTemplate: '%s · PressCompass', usage: { keyphrase: 1, title: 0 } } });
+    expect(plan.ok).toBe(true);
+    if (!plan.ok) return;
+    const stored = plan.fields.seo as { keyphrase: string; scores: { seo: number; readability: number } };
+    expect(stored.keyphrase).toBe('rice prices');
+    expect(stored.scores.seo).toBeGreaterThan(0);
+    expect(stored.scores.seo).toBeLessThan(100);
+    expect(stored.scores.readability).toBeGreaterThan(0);
   });
 
   it('needs a lead image and alt text on every image before publishing', () => {

@@ -41,3 +41,17 @@ export function imageSources(config: Delivery, image: ImageRef, preset: Preset) 
     height: Math.round(height),
   };
 }
+
+/** Shapes for search engines and social networks: Google's 16:9, 4:3 and 1:1, and the 1.91:1 social card. */
+export type ShareShape = '16:9' | '4:3' | '1:1' | '1.91:1';
+
+/** A JPEG crop for structured data and social cards (crawlers do not all read AVIF or WebP). */
+export function shareImageUrl(config: Delivery, publicId: string, shape: ShareShape, width = 1200): string {
+  return `${config.deliveryUrl}/${config.cloudName}/image/upload/c_fill,g_auto,ar_${shape},w_${width},f_jpg,q_auto/${publicId}`;
+}
+
+/** Height of a share crop for a width. */
+export function shareHeight(shape: ShareShape, width = 1200): number {
+  const [w, h] = shape.split(':').map(Number);
+  return Math.round((width * h) / w);
+}

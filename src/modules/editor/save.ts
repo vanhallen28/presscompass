@@ -1,6 +1,7 @@
 import { sanitizeDoc } from '@/lib/doc/sanitize';
 import { bodyMediaIds, docText, readingMinutes, wordCount } from '@/lib/doc/text';
 import { parseWibInput } from '@/lib/time';
+import { analyseArticle, scoresOf } from '@/modules/seo/analysis';
 import type { ArticleInput, FieldErrors } from './input';
 import { publishProblems } from './rules';
 import { type Intent, type Timing, transition } from './status';
@@ -20,19 +21,25 @@ export type SavePlan =
     }
   | { ok: false; errors: FieldErrors };
 
+export type Scoring = { siteHost: string; titleTemplate: string; usage: { keyphrase: number; title: number } | null };
+const DEFAULT_SCORING: Scoring = { siteHost: 'presscompass.site', titleTemplate: '%s · PressCompass', usage: null };
+
 export function prepareSave({
   input,
   current,
   intent,
   now,
   media,
+  scoring = DEFAULT_SCORING,
 }: {
   input: { value: ArticleInput; errors: FieldErrors };
   current: Timing;
   intent: Intent;
   now: Date;
-  /** Alt text of the media items this article uses (lead image and images in the text), by id. */
-  media: Map<string, { alt: string }>;
+  /** Alt text and width of the media items this article uses (lead image and images in the text), by id. */
+  media: Map<string, { alt: string; width?: number }>;
+  /** What the SEO scores need from outside the article (site host, title template, other articles' keyphrases). */
+  scoring?: Scoring;
 }): SavePlan {
   if (Object.keys(input.errors).length) return { ok: false, errors: input.errors };
   const article = input.value;
@@ -85,6 +92,25 @@ export function prepareSave({
     scheduled_at: step.scheduled_at,
   };
   if (step.major_update_at) fields.major_update_at = step.major_update_at;
+
+  const lead = article.leadMediaId ? media.get(article.leadMediaId) : undefined;
+  const analysis = analyseArticle({
+    title: article.title,
+    seoTitle: article.seo.title,
+    description: article.seo.description,
+    standfirst: article.standfirst,
+    slug: article.slug,
+    keyphrase: article.seo.keyphrase,
+    related: article.seo.related,
+    body,
+    noindex: article.seo.noindex,
+    canonical: article.seo.canonical,
+    lead: lead ? { alt: lead.alt, width: lead.width ?? 0 } : null,
+    imageAlts: bodyMediaIds(body).map((id) => media.get(id)?.alt ?? ''),
+    sources: article.sources.length,
+    ...scoring,
+  });
+  fields.seo = { ...article.seo, scores: scoresOf(analysis) };
 
   return {
     ok: true,

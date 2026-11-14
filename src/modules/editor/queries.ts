@@ -1,6 +1,8 @@
 import 'server-only';
 import type { Doc } from '@/lib/doc/schema';
 import { createSessionClient } from '@/lib/supabase/clients';
+import { type ArticleSeo, readArticleSeo } from '@/modules/seo/article';
+import type { Scores } from '@/modules/seo/types';
 import type { ArticleType, Source } from './input';
 import type { ArticleStatus } from './status';
 
@@ -21,6 +23,8 @@ export type ArticleListRow = {
   scheduled_at: string | null;
   section: { id: string; name: string; slug: string } | null;
   authors: string[];
+  /** SEO and readability scores from the last save (null before the first save in v0.6.0). */
+  scores?: Scores | null;
 };
 
 export type ArticleFilter = { status?: ArticleStatus; q?: string; section?: string; author?: string; page?: number; limit?: number };
@@ -48,6 +52,7 @@ export type EditableArticle = {
   authorIds: string[];
   tagIds: string[];
   related: { id: string; title: string; status: ArticleStatus }[];
+  seo: ArticleSeo;
 };
 
 export type Revision = { id: number; note: string; created_at: string };
@@ -63,7 +68,7 @@ function check<T>({ data, error }: { data: unknown; error: { message: string } |
 export async function listArticles(filter: ArticleFilter = {}): Promise<{ total: number; rows: ArticleListRow[] }> {
   const supabase = await createSessionClient();
   const limit = filter.limit ?? PAGE_SIZE;
-  return check(
+  const list = check<{ total: number; rows: ArticleListRow[] }>(
     await supabase.rpc('newsroom_articles', {
       p_status: filter.status ?? null,
       p_query: filter.q || null,
@@ -73,6 +78,18 @@ export async function listArticles(filter: ArticleFilter = {}): Promise<{ total:
       p_offset: Math.max(0, (filter.page ?? 1) - 1) * limit,
     }),
   );
+  if (!list.rows.length) return list;
+  const scores = check<{ id: string; seo: unknown }[]>(
+    await supabase
+      .from('articles')
+      .select('id,seo')
+      .in(
+        'id',
+        list.rows.map((row) => row.id),
+      ),
+  );
+  const byId = new Map(scores.map((row) => [row.id, readArticleSeo(row.seo).scores ?? null]));
+  return { ...list, rows: list.rows.map((row) => ({ ...row, scores: byId.get(row.id) ?? null })) };
 }
 
 export async function statusCounts(): Promise<Partial<Record<ArticleStatus, number>>> {
@@ -95,11 +112,11 @@ export async function publishDue(): Promise<number> {
 
 export async function getArticle(id: string): Promise<EditableArticle | null> {
   const supabase = await createSessionClient();
-  const article = check<Omit<EditableArticle, 'authorIds' | 'tagIds' | 'related'> | null>(
+  const article = check<(Omit<EditableArticle, 'authorIds' | 'tagIds' | 'related' | 'seo'> & { seo: unknown }) | null>(
     await supabase
       .from('articles')
       .select(
-        'id,version,title,slug,section_id,type,kicker_label,standfirst,body,lead_media_id,lead_caption,status,published_at,scheduled_at,major_update_at,is_breaking,sources,word_count,updated_at',
+        'id,version,title,slug,section_id,type,kicker_label,standfirst,body,lead_media_id,lead_caption,status,published_at,scheduled_at,major_update_at,is_breaking,sources,word_count,updated_at,seo',
       )
       .eq('id', id)
       .maybeSingle(),
@@ -120,6 +137,7 @@ export async function getArticle(id: string): Promise<EditableArticle | null> {
   }
   return {
     ...article,
+    seo: readArticleSeo(article.seo),
     authorIds: check<{ author_id: string }[]>(authors).map((row) => row.author_id),
     tagIds: check<{ tag_id: string }[]>(tags).map((row) => row.tag_id),
     related: relatedArticles,
