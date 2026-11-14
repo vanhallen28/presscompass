@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon, type IconName } from '@/components/ds/Icon';
 
-const GROUPS: { label?: string; links: { href: string; label: string; icon: IconName }[] }[] = [
+const GROUPS: { label?: string; links: { href: string; label: string; icon: IconName; exact?: boolean }[] }[] = [
   { links: [{ href: '/newsroom', label: 'Dashboard', icon: 'grid' }] },
   {
     label: 'Content',
@@ -21,10 +21,18 @@ const GROUPS: { label?: string; links: { href: string; label: string; icon: Icon
     label: 'Site',
     links: [{ href: '/newsroom/ads', label: 'Ads', icon: 'chart' }],
   },
+  {
+    label: 'SEO',
+    links: [
+      { href: '/newsroom/seo', label: 'SEO settings', icon: 'search', exact: true },
+      { href: '/newsroom/seo/redirects', label: 'Redirects', icon: 'arrow-right' },
+      { href: '/newsroom/seo/not-found', label: '404 log', icon: 'alert' },
+    ],
+  },
 ];
 
-function isCurrent(pathname: string, href: string) {
-  return href === '/newsroom' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+function isCurrent(pathname: string, href: string, exact = false) {
+  return href === '/newsroom' || exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function SideNav({ className, groupClassName, labelClassName }: { className: string; groupClassName: string; labelClassName: string }) {
@@ -39,7 +47,7 @@ export function SideNav({ className, groupClassName, labelClassName }: { classNa
             </p>
           )}
           {group.links.map((link) => (
-            <Link key={link.href} href={link.href} aria-current={isCurrent(pathname, link.href) ? 'page' : undefined}>
+            <Link key={link.href} href={link.href} aria-current={isCurrent(pathname, link.href, link.exact) ? 'page' : undefined}>
               <Icon name={link.icon} />
               {link.label}
             </Link>

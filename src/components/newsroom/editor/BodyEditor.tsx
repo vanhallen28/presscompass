@@ -2,12 +2,13 @@
 
 import { NodeSelection } from '@tiptap/pm/state';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
-import { type Ref, useContext, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { type Ref, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from '@/components/ds/Icon';
 import type { Doc } from '@/lib/doc/schema';
 import { ImagePickerDialog } from '@/components/media/ImagePickerDialog';
 import { ArticleIdContext, BlockCard } from './BlockCard';
 import { BlockDialog, type DialogKind } from './BlockDialog';
+import { type BlockId, blockKeys, BlockMenu, filterBlocks } from './BlockMenu';
 import styles from './editor.module.css';
 import { editorExtensions, SPECIAL_DEFAULTS, type SpecialKind } from './extensions';
 import { MediaLookupContext } from './media-context';
@@ -16,7 +17,9 @@ export type BodyEditorHandle = { getJSON: () => unknown; getText: () => string; 
 
 type Tool = { label: string; icon?: IconName; text?: string; active?: boolean; disabled?: boolean; run: () => void };
 
-/** The article body: Tiptap with the PressCompass blocks and a formatting toolbar. */
+type Slash = { query: string; from: number; to: number; x: number; y: number; above: boolean };
+
+/** The article body: Tiptap with the PressCompass blocks, a formatting toolbar, the + inserter and the / command. */
 export function BodyEditor({
   ref,
   initial,
@@ -37,7 +40,13 @@ export function BodyEditor({
   const extensions = useMemo(() => editorExtensions(BlockCard), []);
   const [dialog, setDialog] = useState<{ kind: DialogKind; attrs: Record<string, unknown>; mode: 'insert' | 'edit' } | null>(null);
   const [picking, setPicking] = useState(false);
+  const [inserter, setInserter] = useState<{ query: string; active: number } | null>(null);
+  const [slashPick, setSlashPick] = useState({ key: '', active: 0 });
+  const [dismissed, setDismissed] = useState('');
   const lookup = useContext(MediaLookupContext);
+  // ProseMirror calls this for every key press in the text; it reads the / menu as last rendered.
+  const keys = useRef<(event: KeyboardEvent) => boolean>(() => false);
+  const handleKeyDown = useMemo(() => (_view: unknown, event: KeyboardEvent) => keys.current(event), []);
 
   const editor = useEditor({
     extensions,
@@ -45,13 +54,13 @@ export function BodyEditor({
     content: initial.content.length ? initial : { type: 'doc', content: [{ type: 'paragraph' }] },
     editable,
     immediatelyRender: false,
-    editorProps: { attributes: textboxAttributes(invalid, describedBy) },
+    editorProps: { attributes: textboxAttributes(invalid, describedBy), handleKeyDown },
     onUpdate: ({ editor: current }) => onChange(current.getText()),
   });
 
   useEffect(() => {
-    editor?.setOptions({ editorProps: { attributes: textboxAttributes(invalid, describedBy) } });
-  }, [editor, invalid, describedBy]);
+    editor?.setOptions({ editorProps: { attributes: textboxAttributes(invalid, describedBy), handleKeyDown } });
+  }, [editor, invalid, describedBy, handleKeyDown]);
 
   useEffect(() => {
     if (editor && editor.isEditable !== editable) editor.setEditable(editable);
@@ -83,9 +92,32 @@ export function BodyEditor({
             table: e.isActive('table'),
             canUndo: e.can().undo(),
             canRedo: e.can().redo(),
+            slash: slashAt(e),
           }
         : null;
     },
+  });
+
+  const slash = state?.slash ?? null;
+  const slashKey = slash ? `${slash.from}:${slash.query}` : '';
+  const slashOpen = Boolean(slash) && editable && dismissed !== slashKey && !dialog && !picking;
+  const slashItems = slash ? filterBlocks(slash.query) : [];
+  const slashActive = slashPick.key === slashKey ? Math.min(slashPick.active, Math.max(0, slashItems.length - 1)) : 0;
+
+  // Keys while the / menu is open.
+  useEffect(() => {
+    keys.current = (event: KeyboardEvent) => {
+      if (!slashOpen || !slash) return false;
+      const handled = blockKeys(event.key, {
+        count: slashItems.length,
+        active: slashActive,
+        setActive: (active) => setSlashPick({ key: slashKey, active }),
+        pick: () => pickFromSlash(slashItems[slashActive].id),
+        close: () => setDismissed(slashKey),
+      });
+      if (handled) event.preventDefault();
+      return handled;
+    };
   });
 
   if (!editor || !state) return <div className={styles.bodyLoading} aria-hidden="true" />;
@@ -98,6 +130,41 @@ export function BodyEditor({
     const content = [{ type, attrs }, { type: 'paragraph' }];
     if (selection instanceof NodeSelection) chain().insertContentAt(selection.to, content).run();
     else chain().insertContent(content).run();
+  };
+
+  const runBlock = (id: BlockId) => {
+    switch (id) {
+      case 'paragraph':
+        return chain().setParagraph().run();
+      case 'h2':
+        return chain().setHeading({ level: 2 }).run();
+      case 'h3':
+        return chain().setHeading({ level: 3 }).run();
+      case 'bullet':
+        return chain().toggleBulletList().run();
+      case 'ordered':
+        return chain().toggleOrderedList().run();
+      case 'quote':
+        return chain().toggleBlockquote().run();
+      case 'divider':
+        return chain().setHorizontalRule().run();
+      case 'table':
+        return chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+      case 'image':
+        return setPicking(true);
+      default:
+        return insert(id);
+    }
+  };
+  function pickFromSlash(id: BlockId) {
+    if (!slash) return;
+    editor?.chain().focus().deleteRange({ from: slash.from, to: slash.to }).run();
+    runBlock(id);
+  }
+  const inserterItems = inserter ? filterBlocks(inserter.query) : [];
+  const pickFromInserter = (id: BlockId) => {
+    setInserter(null);
+    runBlock(id);
   };
 
   const groups: Tool[][] = [
@@ -163,22 +230,77 @@ export function BodyEditor({
 
   return (
     <ArticleIdContext value={articleId}>
-      <div className={styles.body} data-invalid={invalid || undefined}>
+      <div className={styles.body} data-invalid={invalid || undefined} data-editor-body="">
         {editable && (
-          <div className={styles.toolbar} role="toolbar" aria-label="Formatting">
-            {groups.map((group, index) => (
-              <div key={index} className={styles.toolGroup}>
-                {group.map(button)}
+          <div className={styles.toolbarWrap}>
+            <div className={styles.toolbar} role="toolbar" aria-label="Formatting">
+              <div className={styles.toolGroup}>
+                <button
+                  type="button"
+                  className={`${styles.tool} ${styles.addBlock}`}
+                  aria-label="Add a block"
+                  title="Add a block (or type / in an empty line)"
+                  aria-expanded={Boolean(inserter)}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => setInserter(inserter ? null : { query: '', active: 0 })}
+                >
+                  <Icon name="plus" size={18} />
+                </button>
               </div>
-            ))}
-            {state.table && (
-              <div className={`${styles.toolGroup} ${styles.tableTools}`} role="group" aria-label="Table">
-                {tableTools.map(button)}
-              </div>
+              {groups.map((group, index) => (
+                <div key={index} className={styles.toolGroup}>
+                  {group.map(button)}
+                </div>
+              ))}
+              {state.table && (
+                <div className={`${styles.toolGroup} ${styles.tableTools}`} role="group" aria-label="Table">
+                  {tableTools.map(button)}
+                </div>
+              )}
+            </div>
+            {inserter && (
+              <>
+                <div className={styles.menuBackdrop} aria-hidden="true" onMouseDown={() => setInserter(null)} />
+                <BlockMenu
+                  label="Add a block"
+                  items={inserterItems}
+                  active={Math.min(inserter.active, Math.max(0, inserterItems.length - 1))}
+                  onActive={(active) => setInserter({ ...inserter, active })}
+                  onPick={pickFromInserter}
+                  style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 8 }}
+                  search={{
+                    value: inserter.query,
+                    onChange: (query) => setInserter({ query, active: 0 }),
+                    onKeyDown: (event) => {
+                      const handled = blockKeys(event.key, {
+                        count: inserterItems.length,
+                        active: Math.min(inserter.active, Math.max(0, inserterItems.length - 1)),
+                        setActive: (active) => setInserter({ ...inserter, active }),
+                        pick: () => pickFromInserter(inserterItems[Math.min(inserter.active, inserterItems.length - 1)].id),
+                        close: () => {
+                          setInserter(null);
+                          editor.commands.focus();
+                        },
+                      });
+                      if (handled) event.preventDefault();
+                    },
+                  }}
+                />
+              </>
             )}
           </div>
         )}
         <EditorContent editor={editor} />
+        {slashOpen && slash && (
+          <BlockMenu
+            label="Blocks"
+            items={slashItems}
+            active={slashActive}
+            onActive={(active) => setSlashPick({ key: slashKey, active })}
+            onPick={pickFromSlash}
+            style={{ position: 'absolute', top: slash.y, left: slash.x, transform: slash.above ? 'translateY(-100%)' : undefined }}
+          />
+        )}
       </div>
       {dialog && (
         <BlockDialog
@@ -187,14 +309,21 @@ export function BodyEditor({
           initial={dialog.attrs}
           articleId={articleId}
           onClose={() => setDialog(null)}
-          onRemove={dialog.kind === 'link' && dialog.mode === 'edit' ? () => {
-            chain().extendMarkRange('link').unsetLink().run();
-            setDialog(null);
-          } : undefined}
+          onRemove={
+            dialog.kind === 'link' && dialog.mode === 'edit'
+              ? () => {
+                  chain().extendMarkRange('link').unsetLink().run();
+                  setDialog(null);
+                }
+              : undefined
+          }
           onSave={(attrs) => {
             if (dialog.kind === 'link') {
               const href = String(attrs.href);
-              if (editor.state.selection.empty && !state.link) chain().insertContent({ type: 'text', text: href, marks: [{ type: 'link', attrs: { href } }] }).run();
+              if (editor.state.selection.empty && !state.link)
+                chain()
+                  .insertContent({ type: 'text', text: href, marks: [{ type: 'link', attrs: { href } }] })
+                  .run();
               else chain().extendMarkRange('link').setLink({ href }).run();
             } else {
               insertBlock(dialog.kind, attrs);
@@ -219,6 +348,29 @@ export function BodyEditor({
       )}
     </ArticleIdContext>
   );
+}
+
+/** A / typed at the start of an empty top-level paragraph, with what follows it and where the cursor is. */
+function slashAt(e: NonNullable<ReturnType<typeof useEditor>>): Slash | null {
+  const { selection } = e.state;
+  if (!selection.empty || !e.isEditable) return null;
+  const $from = selection.$from;
+  if ($from.depth !== 1 || $from.parent.type.name !== 'paragraph') return null;
+  const text = $from.parent.textContent;
+  if (!text.startsWith('/') || $from.parentOffset !== text.length || text.length > 25 || /\s/.test(text)) return null;
+  try {
+    // Placed inside the editor box, so the menu stays at the cursor when the page scrolls.
+    const coords = e.view.coordsAtPos($from.pos);
+    const box = e.view.dom.closest('[data-editor-body]')?.getBoundingClientRect();
+    if (!box) return null;
+    const x = Math.max(8, Math.min(coords.left - box.left, box.width - 348));
+    // Near the bottom of the window the menu opens upwards.
+    const above = coords.bottom + 300 > window.innerHeight && coords.top > 320;
+    const y = above ? coords.top - box.top - 6 : coords.bottom - box.top + 6;
+    return { query: text.slice(1), from: $from.start(), to: $from.pos, x: Math.round(x), y: Math.round(y), above };
+  } catch {
+    return null;
+  }
 }
 
 function textboxAttributes(invalid?: boolean, describedBy?: string): Record<string, string> {

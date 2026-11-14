@@ -87,3 +87,12 @@
 .card[hidden] {
   display: none;
 }
+
+/* Row actions in Newsroom tables (404 log). */
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  white-space: nowrap;
+  font: 500 14px/20px var(--font-sans);
+}

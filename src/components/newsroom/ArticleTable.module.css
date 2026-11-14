@@ -37,3 +37,31 @@
   accent-color: var(--navy);
   vertical-align: middle;
 }
+
+/* SEO and readability scores from the last save. */
+.scores {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.score {
+  min-width: 28px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  text-align: center;
+  font: 500 12px/18px var(--font-mono);
+  color: var(--paper-raised);
+  background: var(--ink-muted);
+}
+
+.score[data-rating='good'] {
+  background: var(--success);
+}
+
+.score[data-rating='ok'] {
+  background: var(--warning);
+}
+
+.score[data-rating='bad'] {
+  background: var(--danger);
+}

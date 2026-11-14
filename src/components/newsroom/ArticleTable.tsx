@@ -7,6 +7,7 @@ import { formatWib } from '@/lib/time';
 import { type BulkState, bulkArticles } from '@/modules/editor/actions';
 import type { ArticleListRow } from '@/modules/editor/queries';
 import { CONFIRMATIONS } from '@/modules/editor/status';
+import { RATING_LABELS, ratingFor } from '@/modules/seo/types';
 import styles from './ArticleTable.module.css';
 import { ConfirmButton } from './ConfirmButton';
 import { StatusBadge } from './StatusBadge';
@@ -106,6 +107,7 @@ export function ArticleTable({ rows }: { rows: ArticleListRow[] }) {
               <th scope="col">Author</th>
               <th scope="col">Status</th>
               <th scope="col">Updated</th>
+              <th scope="col">SEO</th>
               <th scope="col" className={ui.num}>
                 Words
               </th>
@@ -144,6 +146,31 @@ export function ArticleTable({ rows }: { rows: ArticleListRow[] }) {
                     {row.status === 'scheduled' && row.scheduled_at && <span className={ui.slug}>{formatWib(row.scheduled_at, 'short')}</span>}
                   </td>
                   <td className={ui.mono}>{formatWib(row.updated_at, 'short')}</td>
+                  <td>
+                    {row.scores ? (
+                      <span className={styles.scores}>
+                        <span
+                          className={styles.score}
+                          data-rating={ratingFor(row.scores.seo)}
+                          title={`SEO: ${RATING_LABELS[ratingFor(row.scores.seo)]}`}
+                        >
+                          {row.scores.seo}
+                        </span>
+                        <span
+                          className={styles.score}
+                          data-rating={ratingFor(row.scores.readability)}
+                          title={`Readability: ${RATING_LABELS[ratingFor(row.scores.readability)]}`}
+                        >
+                          {row.scores.readability}
+                        </span>
+                        <span className={ui.srOnly}>
+                          SEO {row.scores.seo}, readability {row.scores.readability}
+                        </span>
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className={ui.num}>{row.word_count}</td>
                 </tr>
               );

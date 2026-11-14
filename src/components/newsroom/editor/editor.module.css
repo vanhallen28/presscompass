@@ -1,6 +1,7 @@
 /* The body editor: toolbar, writing surface in the article typography, special block cards. */
 
 .body {
+  position: relative;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-md);
   background: var(--paper-raised);
@@ -21,10 +22,13 @@
   background: var(--paper-raised);
 }
 
-.toolbar {
+.toolbarWrap {
   position: sticky;
-  top: 0;
-  z-index: 1;
+  top: var(--editor-sticky-top, 0px);
+  z-index: 2;
+}
+
+.toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 12px;
@@ -331,4 +335,103 @@
   .imageCard {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* + inserter and / command (as in WordPress) */
+
+.addBlock {
+  background: var(--ink);
+  color: var(--paper-raised);
+}
+
+.addBlock:hover,
+.addBlock[aria-expanded='true'] {
+  background: var(--meridian);
+  color: var(--paper-raised);
+}
+
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+}
+
+.blockMenu {
+  z-index: 5;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(420px, 60vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--paper-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.14);
+}
+
+.blockSearch {
+  margin: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 15px/20px var(--font-sans);
+}
+
+.blockSearch:focus-visible {
+  outline: 2px solid var(--meridian);
+  outline-offset: -1px;
+}
+
+.blockList {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+}
+
+.blockItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.blockItem[aria-selected='true'] {
+  background: var(--meridian-soft);
+}
+
+.blockIcon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--ink-secondary);
+  font: 600 12px/16px var(--font-sans);
+}
+
+.blockLabel {
+  display: block;
+  font: 600 14px/18px var(--font-sans);
+  color: var(--ink);
+}
+
+.blockHint {
+  display: block;
+  font: 400 12px/16px var(--font-sans);
+  color: var(--ink-muted);
+}
+
+.blockEmpty {
+  padding: 10px;
+  font: 400 14px/20px var(--font-sans);
+  color: var(--ink-muted);
 }

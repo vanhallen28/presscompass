@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useEffectEvent, useId, useMemo, useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ds/Button';
 import { ConfirmButton } from '@/components/newsroom/ConfirmButton';
 import { BodyEditor, type BodyEditorHandle } from '@/components/newsroom/editor/BodyEditor';
@@ -10,12 +10,19 @@ import { ImagePickerDialog } from '@/components/media/ImagePickerDialog';
 import { type MediaLookup, MediaLookupContext } from '@/components/newsroom/editor/media-context';
 import { CheckboxField, SelectField, TextArea, TextField } from '@/components/newsroom/Field';
 import forms from '@/components/newsroom/forms.module.css';
+import { Panel } from '@/components/newsroom/Panel';
+import { isSeoField, ScoreBadge, SeoPanel } from '@/components/newsroom/seo/SeoPanel';
 import { StatusBadge } from '@/components/newsroom/StatusBadge';
 import { Notice, ui } from '@/components/newsroom/ui';
 import { slugify } from '@/lib/slug';
-import { readingMinutes, wordCount } from '@/lib/doc/text';
+import { type Doc, UUID } from '@/lib/doc/schema';
+import { sanitizeDoc } from '@/lib/doc/sanitize';
+import { bodyMediaIds, readingMinutes, wordCount } from '@/lib/doc/text';
 import { formatWib, toWibInput } from '@/lib/time';
 import { deleteArticle, findArticles, saveArticle } from '@/modules/editor/actions';
+import { seoLookup, type SeoLookup } from '@/modules/seo/actions';
+import { analyseArticle } from '@/modules/seo/analysis';
+import type { ArticleSeo } from '@/modules/seo/article';
 import { ARTICLE_TYPES, type FieldErrors, MAX, type Source, TYPE_LABELS } from '@/modules/editor/input';
 import type { EditableArticle } from '@/modules/editor/queries';
 import type { MediaItem } from '@/modules/media/types';
@@ -28,6 +35,9 @@ type Related = { id: string; title: string };
 type Found = Awaited<ReturnType<typeof findArticles>>;
 
 const AUTOSAVE_MS = 10_000;
+
+/** What the SEO tab needs from the site settings. */
+export type SeoContext = { origin: string; siteHost: string; siteName: string; titleTemplate: string; indexing: boolean };
 
 const DONE: Partial<Record<Intent, string>> = {
   save: 'Draft saved.',
@@ -49,6 +59,10 @@ const ANCHORS: Record<string, string> = {
   leadImage: 'lead-title',
   leadCaption: 'lead-caption',
   images: 'body-label',
+  seoTitle: 'seo-title',
+  seoDescription: 'seo-description',
+  keyphrase: 'seo-keyphrase',
+  canonical: 'seo-canonical',
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -65,6 +79,10 @@ const FIELD_LABELS: Record<string, string> = {
   leadCaption: 'Lead image caption',
   images: 'Images',
   status: 'Status',
+  seoTitle: 'SEO title',
+  seoDescription: 'Meta description',
+  keyphrase: 'Keyphrase',
+  canonical: 'Canonical address',
 };
 
 export function ArticleEditor({
@@ -74,8 +92,10 @@ export function ArticleEditor({
   tags,
   media,
   notice,
+  seoContext,
 }: {
   article: EditableArticle;
+  seoContext: SeoContext;
   /** Media items the article uses (lead image and images in the text). */
   media: MediaItem[];
   sections: (Option & { slug: string })[];
@@ -111,6 +131,14 @@ export function ArticleEditor({
   );
   const leadMedia = leadMediaId ? known.get(leadMediaId) : undefined;
   const [words, setWords] = useState(article.word_count);
+  const [seo, setSeo] = useState<ArticleSeo>(article.seo);
+  const socialMedia = seo.ogMediaId ? known.get(seo.ogMediaId) : undefined;
+  const [pickingSocial, setPickingSocial] = useState(false);
+  const [tab, setTab] = useState<'article' | 'seo'>('article');
+  // The body as the analysis last saw it: refreshed a moment after typing stops.
+  const [doc, setDoc] = useState<Doc>(article.body);
+  const docTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [seoFound, setSeoFound] = useState<SeoLookup | null>(null);
 
   const [version, setVersion] = useState(article.version);
   const [status, setStatus] = useState<ArticleStatus>(article.status);
@@ -173,6 +201,7 @@ export function ArticleEditor({
             majorUpdate: intent === 'update' && majorUpdate,
             leadMediaId,
             leadCaption,
+            seo,
           },
           intent,
         );
@@ -236,6 +265,7 @@ export function ArticleEditor({
       majorUpdate,
       leadMediaId,
       leadCaption,
+      seo,
     ],
   );
 
@@ -270,6 +300,64 @@ export function ArticleEditor({
     };
   }, []);
 
+  const analysis = useMemo(
+    () =>
+      analyseArticle({
+        title,
+        seoTitle: seo.title,
+        description: seo.description,
+        standfirst,
+        slug,
+        keyphrase: seo.keyphrase,
+        related: seo.related,
+        body: doc,
+        noindex: seo.noindex,
+        canonical: seo.canonical,
+        lead: leadMedia ? { alt: leadMedia.alt, width: leadMedia.width } : null,
+        imageAlts: bodyMediaIds(doc).map((mediaId) => known.get(mediaId)?.alt ?? ''),
+        sources: sources.filter((source) => source.title && source.url).length,
+        siteHost: seoContext.siteHost,
+        titleTemplate: seoContext.titleTemplate,
+        usage: seoFound ? { keyphrase: seoFound.keyphrase.length, title: seoFound.title.length } : null,
+      }),
+    [title, seo, standfirst, slug, doc, leadMedia, known, sources, seoContext, seoFound],
+  );
+
+  // Other articles with the same keyphrase or title, and link suggestions: asked a moment after the inputs settle.
+  const linkedKey = useMemo(
+    () => [...new Set([...readMoreIds(doc), ...related.map((r) => r.id)])].join(','),
+    [doc, related],
+  );
+  const tagKey = tagIds.join(',');
+  useEffect(() => {
+    let current = true;
+    const timer = setTimeout(() => {
+      seoLookup({
+        articleId: article.id,
+        keyphrase: seo.keyphrase,
+        title: seo.title || title,
+        sectionId: sectionId || null,
+        tagIds: tagKey ? tagKey.split(',') : [],
+        linkedIds: linkedKey ? linkedKey.split(',') : [],
+      })
+        .then((result) => current && setSeoFound(result))
+        .catch(() => undefined);
+    }, 700);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [article.id, seo.keyphrase, seo.title, title, sectionId, tagKey, linkedKey]);
+
+  function jumpTo(field: string) {
+    setTab(isSeoField(field) ? 'seo' : 'article');
+    requestAnimationFrame(() => {
+      const target = document.getElementById(id(ANCHORS[field] ?? field));
+      target?.scrollIntoView({ block: 'center' });
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) target.focus();
+    });
+  }
+
   function run(intent: Intent) {
     if (intent === 'schedule' && !scheduling) {
       setScheduling(true);
@@ -294,7 +382,7 @@ export function ArticleEditor({
             : 'Unsaved changes: press Update to publish them'
           : `Saved ${formatWib(savedAt, 'short')}`;
 
-  const actionButton = (intent: Intent, variant: 'primary' | 'secondary' | 'quiet') => {
+  const actionButton = (intent: Intent, variant: 'primary' | 'secondary' | 'quiet', fullWidth = true) => {
     const label = intent === 'schedule' && scheduling ? 'Confirm schedule' : intentLabel(intent, status);
     const confirm = CONFIRMATIONS[intent];
     const busy = saving === intent;
@@ -303,7 +391,8 @@ export function ArticleEditor({
         <ConfirmButton
           key={intent}
           variant={variant}
-          fullWidth
+          fullWidth={fullWidth}
+          size={fullWidth ? undefined : 'sm'}
           disabled={Boolean(saving) || conflict}
           title={confirm.title}
           body={confirm.body}
@@ -316,16 +405,26 @@ export function ArticleEditor({
       );
     }
     return (
-      <Button key={intent} variant={variant} fullWidth disabled={Boolean(saving) || conflict} onClick={() => run(intent)}>
+      <Button key={intent} variant={variant} fullWidth={fullWidth} size={fullWidth ? undefined : 'sm'} disabled={Boolean(saving) || conflict} onClick={() => run(intent)}>
         {busy ? (intent === 'save' ? 'Saving…' : 'Working…') : label}
       </Button>
     );
   };
 
-  const primary = scheduling && actions.primary !== 'schedule' ? 'schedule' : actions.primary;
-  const others = scheduling ? [] : actions.others;
+  // The top bar carries Save draft and the next step, as WordPress does; the Status card the other actions.
+  const canSaveDraft = actions.others.includes('save');
+  const others = scheduling ? [] : actions.others.filter((intent) => intent !== 'save');
   const availableAuthors = authors.filter((a) => !authorIds.includes(a.id));
   const availableTags = tags.filter((t) => !tagIds.includes(t.id));
+
+  const errorPanel = (...fields: string[]) => fields.some((field) => Boolean(errorFor(field)));
+  const tabKeys = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      const next = tab === 'article' ? 'seo' : 'article';
+      setTab(next);
+      document.getElementById(id(`tab-${next}`))?.focus();
+    }
+  };
 
   return (
     <MediaLookupContext value={lookup}>
@@ -340,12 +439,18 @@ export function ArticleEditor({
           {saveState}
         </p>
         <div className={styles.topLinks}>
+          <span className={styles.topScores}>
+            <ScoreBadge label="SEO" assessment={analysis.seo} onClick={() => setTab('seo')} />
+            <ScoreBadge label="Readability" assessment={analysis.readability} onClick={() => setTab('seo')} />
+          </span>
           <ButtonLink href={`/newsroom/articles/${article.id}/history`} size="sm" variant="quiet" icon="history">
             History
           </ButtonLink>
-          <ButtonLink href={`/newsroom/preview/${article.id}`} size="sm" icon="eye" target="_blank">
+          <ButtonLink href={`/newsroom/preview/${article.id}`} size="sm" variant="quiet" icon="eye" target="_blank">
             Preview
           </ButtonLink>
+          {canSaveDraft && actionButton('save', 'secondary', false)}
+          {actionButton(actions.primary, 'primary', false)}
         </div>
       </div>
 
@@ -361,6 +466,27 @@ export function ArticleEditor({
       )}
       {message && !conflict && <Notice tone={message.tone}>{message.text}</Notice>}
       {readOnly && <Notice tone="info">Archived articles are read-only. Restore it to draft to edit it.</Notice>}
+      {problems.length > 0 && (
+        <div className={styles.problems} role="alert">
+          <p>{problems.length === 1 ? 'One thing needs attention:' : `${problems.length} things need attention:`}</p>
+          <ul>
+            {problems.map(([field, text]) => (
+              <li key={field}>
+                <a
+                  href={`#${id(ANCHORS[field] ?? field)}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    jumpTo(field);
+                  }}
+                >
+                  {FIELD_LABELS[field] ?? field}
+                </a>
+                : {text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className={styles.grid}>
         <div className={styles.main}>
@@ -427,6 +553,8 @@ export function ArticleEditor({
               onChange={(text) => {
                 setWords(wordCount(text));
                 touch();
+                if (docTimer.current) clearTimeout(docTimer.current);
+                docTimer.current = setTimeout(() => setDoc(sanitizeDoc(body.current?.getJSON())), 400);
               }}
             />
             {errorFor('body') && (
@@ -434,15 +562,51 @@ export function ArticleEditor({
                 {errorFor('body')}
               </p>
             )}
-            <p className={styles.wordCount}>
-              {words} {words === 1 ? 'word' : 'words'}
-              {minutes > 0 && ` · ${minutes} min read`}
-              {words < MIN_WORDS && ` · ${MIN_WORDS} needed to publish`}
-            </p>
+            <div className={styles.belowBody}>
+              <p className={styles.wordCount}>
+                {words} {words === 1 ? 'word' : 'words'}
+                {minutes > 0 && ` · ${minutes} min read`}
+                {words < MIN_WORDS && ` · ${MIN_WORDS} needed to publish`}
+              </p>
+              {!readOnly && <p className={styles.wordCount}>Type / in an empty line to add a block</p>}
+            </div>
           </div>
         </div>
 
         <aside className={styles.panel} aria-label="Article settings">
+          <div className={styles.tabs} role="tablist" aria-label="Settings">
+            <button
+              type="button"
+              role="tab"
+              id={id('tab-article')}
+              className={styles.tab}
+              aria-selected={tab === 'article'}
+              aria-controls={id('panel-article')}
+              tabIndex={tab === 'article' ? 0 : -1}
+              onClick={() => setTab('article')}
+              onKeyDown={tabKeys}
+            >
+              Article
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id={id('tab-seo')}
+              className={styles.tab}
+              aria-selected={tab === 'seo'}
+              aria-controls={id('panel-seo')}
+              tabIndex={tab === 'seo' ? 0 : -1}
+              onClick={() => setTab('seo')}
+              onKeyDown={tabKeys}
+            >
+              SEO
+              <span className={styles.tabScore} data-rating={analysis.seo.rating}>
+                {analysis.seo.score}
+              </span>
+            </button>
+          </div>
+
+          <div role="tabpanel" id={id('panel-article')} aria-labelledby={id('tab-article')} hidden={tab !== 'article'} className={styles.tabPanel}>
           <section className={styles.card} aria-label="Status">
             <div className={styles.statusHead}>
               <StatusBadge status={status} />
@@ -454,21 +618,6 @@ export function ArticleEditor({
                     : 'Not published yet'}
               </span>
             </div>
-            {problems.length > 0 && (
-              <div className={styles.problems} role="alert">
-                <p>{problems.length === 1 ? 'One thing needs attention:' : `${problems.length} things need attention:`}</p>
-                <ul>
-                  {problems.map(([field, text]) => (
-                    <li key={field}>
-                      <a href={`#${id(ANCHORS[field] ?? field)}`}>
-                        {FIELD_LABELS[field] ?? field}
-                      </a>
-                      : {text}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
             {(scheduling || status === 'scheduled') && (
               <TextField
                 id={id('schedule')}
@@ -488,21 +637,19 @@ export function ArticleEditor({
                 onChange={(event) => setMajorUpdate(event.target.checked)}
               />
             )}
-            <div className={styles.actions}>
-              {actionButton(primary, 'primary')}
-              {scheduling && (
-                <Button variant="quiet" fullWidth onClick={() => setScheduling(false)}>
-                  Cancel
-                </Button>
-              )}
-              {others.map((intent) => actionButton(intent, 'secondary'))}
-            </div>
+            {(scheduling || others.length > 0) && (
+              <div className={styles.actions}>
+                {scheduling && actionButton('schedule', 'primary')}
+                {scheduling && (
+                  <Button variant="quiet" fullWidth onClick={() => setScheduling(false)}>
+                    Cancel
+                  </Button>
+                )}
+                {others.map((intent) => actionButton(intent, 'secondary'))}
+              </div>
+            )}
           </section>
-
-          <section className={styles.card} aria-labelledby={id('lead-title')}>
-            <h2 className={styles.cardTitle} id={id('lead-title')}>
-              Lead image
-            </h2>
+          <Panel title="Lead image" titleId={id('lead-title')} forceOpen={errorPanel('leadImage', 'leadCaption')}>
             {errorFor('leadImage') && <p className={forms.error}>{errorFor('leadImage')}</p>}
             {leadMediaId && !leadMedia && <p className={forms.hint}>The chosen image is no longer in the media library.</p>}
             {leadMedia && (
@@ -546,10 +693,9 @@ export function ArticleEditor({
                 onChange={(event) => change(setLeadCaption)(event.target.value)}
               />
             )}
-          </section>
+          </Panel>
 
-          <section className={styles.card} aria-label="Details">
-            <h2 className={styles.cardTitle}>Details</h2>
+          <Panel title="Details" forceOpen={errorPanel('slug', 'sectionId', 'kicker')}>
             <TextField
               id={id('slug')}
               label="Address"
@@ -611,12 +757,9 @@ export function ArticleEditor({
               disabled={readOnly}
               onChange={(event) => change(setIsBreaking)(event.target.checked)}
             />
-          </section>
+          </Panel>
 
-          <section className={styles.card} aria-labelledby={id('authors-title')}>
-            <h2 className={styles.cardTitle} id={id('authors-title')}>
-              Byline
-            </h2>
+          <Panel title="Byline" titleId={id('authors-title')} forceOpen={errorPanel('authorIds')}>
             {errorFor('authorIds') && <p className={forms.error}>{errorFor('authorIds')}</p>}
             {authorIds.length > 0 && (
               <ol className={styles.chosenList}>
@@ -667,12 +810,9 @@ export function ArticleEditor({
                 No authors yet. <Link href="/newsroom/authors/new">Add one</Link> first.
               </p>
             )}
-          </section>
+          </Panel>
 
-          <section className={styles.card} aria-labelledby={id('tags-title')}>
-            <h2 className={styles.cardTitle} id={id('tags-title')}>
-              Tags
-            </h2>
+          <Panel title="Tags" titleId={id('tags-title')}>
             {tagIds.length > 0 && (
               <ul className={styles.chips}>
                 {tagIds.map((tagId) => {
@@ -706,14 +846,11 @@ export function ArticleEditor({
               </Link>{' '}
               opens in a new tab. Reload this page after creating it.
             </p>
-          </section>
+          </Panel>
 
           <RelatedPicker articleId={article.id} related={related} readOnly={readOnly} onChange={change(setRelated)} uid={uid} />
 
-          <section className={styles.card} aria-labelledby={id('sources-title')}>
-            <h2 className={styles.cardTitle} id={id('sources-title')}>
-              Sources
-            </h2>
+          <Panel title="Sources" titleId={id('sources-title')} forceOpen={errorPanel('sources')}>
             {errorFor('sources') && <p className={forms.error}>{errorFor('sources')}</p>}
             {sources.map((source, index) => (
               <fieldset key={index} className={styles.source}>
@@ -736,7 +873,7 @@ export function ArticleEditor({
                 Add source
               </Button>
             )}
-          </section>
+          </Panel>
 
           {status !== 'published' && (
             <section className={styles.card} aria-label="Delete">
@@ -756,6 +893,31 @@ export function ArticleEditor({
               </form>
             </section>
           )}
+          </div>
+
+          <div role="tabpanel" id={id('panel-seo')} aria-labelledby={id('tab-seo')} hidden={tab !== 'seo'} className={styles.tabPanel}>
+            <SeoPanel
+              uid={uid}
+              analysis={analysis}
+              seo={seo}
+              onChange={change(setSeo)}
+              headline={title}
+              standfirst={standfirst}
+              kicker={kicker}
+              slug={slug}
+              section={section ? { name: section.name, slug: section.slug } : null}
+              publishedAt={publishedAt}
+              origin={seoContext.origin}
+              siteName={seoContext.siteName}
+              indexing={seoContext.indexing}
+              lead={leadMedia}
+              social={socialMedia}
+              onPickSocial={() => setPickingSocial(true)}
+              lookup={seoFound}
+              readOnly={readOnly}
+              errors={errors}
+            />
+          </div>
         </aside>
       </div>
     </div>
@@ -772,6 +934,20 @@ export function ArticleEditor({
           if (!leadCaption && picked.caption) setLeadCaption(picked.caption);
           setPickingLead(false);
           touch();
+        }}
+      />
+    )}
+    {pickingSocial && (
+      <ImagePickerDialog
+        title="Social image"
+        initial={socialMedia ?? null}
+        caption={null}
+        submitLabel="Use for social cards"
+        onClose={() => setPickingSocial(false)}
+        onSave={({ media: picked }) => {
+          lookup.remember(picked);
+          change(setSeo)({ ...seo, ogMediaId: picked.id });
+          setPickingSocial(false);
         }}
       />
     )}
@@ -806,10 +982,7 @@ function RelatedPicker({
   }
 
   return (
-    <section className={styles.card} aria-labelledby={`${uid}-related-title`}>
-      <h2 className={styles.cardTitle} id={`${uid}-related-title`}>
-        Related articles
-      </h2>
+    <Panel title="Related articles" titleId={`${uid}-related-title`}>
       <p className={forms.hint}>Your picks appear first under the article. The rest fill in from the same section and tags.</p>
       {related.length > 0 && (
         <ol className={styles.chosenList}>
@@ -863,8 +1036,13 @@ function RelatedPicker({
           )}
         </>
       )}
-    </section>
+    </Panel>
   );
+}
+
+/** Articles linked by Read more cards in the body. */
+function readMoreIds(doc: Doc): string[] {
+  return doc.content.flatMap((block) => (block.type === 'readMore' && UUID.test(block.attrs.articleId) ? [block.attrs.articleId] : []));
 }
 
 function move<T>(list: T[], index: number, by: number): T[] {

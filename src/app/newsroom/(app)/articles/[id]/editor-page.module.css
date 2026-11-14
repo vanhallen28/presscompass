@@ -3,14 +3,97 @@
 .page {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+  /* The body editor's toolbar sticks under the top bar (editor.module.css). */
+  --editor-sticky-top: 64px;
 }
 
+/* The top bar stays in view while writing, as in WordPress: status, scores and the publishing buttons. */
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
-  margin-bottom: var(--space-4);
+  min-height: 56px;
+  margin: calc(var(--space-5) * -1) calc(var(--space-6) * -1) 0;
+  padding: 10px var(--space-6);
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+}
+
+.topScores {
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--paper-sunken);
+}
+
+.tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-secondary);
+  font: 600 14px/20px var(--font-sans);
+  cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+  background: var(--paper-raised);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--meridian);
+  outline-offset: -2px;
+}
+
+.tabScore {
+  min-width: 26px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font: 500 12px/16px var(--font-mono);
+  color: var(--paper-raised);
+  background: var(--ink-muted);
+}
+
+.tabScore[data-rating='good'] {
+  background: var(--success);
+}
+
+.tabScore[data-rating='ok'] {
+  background: var(--warning);
+}
+
+.tabScore[data-rating='bad'] {
+  background: var(--danger);
+}
+
+.tabPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tabPanel[hidden] {
+  display: none;
 }
 
 .back {
@@ -33,6 +116,8 @@
 .topLinks {
   margin-left: auto;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
 }
 
@@ -105,6 +190,13 @@
   border-bottom-color: var(--danger);
 }
 
+.belowBody {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px var(--space-4);
+}
+
 .wordCount {
   font: 400 13px/20px var(--font-mono);
   color: var(--ink-muted);
@@ -113,8 +205,20 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   min-width: 0;
+}
+
+/* On wide screens the settings column scrolls on its own beside the text, like the WordPress sidebar. */
+@media (min-width: 1181px) {
+  .panel {
+    position: sticky;
+    top: 72px;
+    max-height: calc(100vh - 88px);
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+  }
 }
 
 .card {
@@ -333,4 +437,26 @@
 .leadAltMissing {
   color: var(--warning);
   font-weight: 500;
+}
+
+@media (max-width: 1024px) {
+  .top {
+    margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0;
+    padding: 10px var(--space-4);
+  }
+}
+
+/* On small screens the top bar wraps onto several lines, so it scrolls away and the toolbar sticks at the top. */
+@media (max-width: 760px) {
+  .page {
+    --editor-sticky-top: 0px;
+  }
+
+  .top {
+    position: static;
+  }
+
+  .topScores {
+    order: 1;
+  }
 }

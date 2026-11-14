@@ -3,9 +3,11 @@ import { notFound } from 'next/navigation';
 import { UUID } from '@/lib/doc/schema';
 import { sanitizeDoc } from '@/lib/doc/sanitize';
 import { bodyMediaIds } from '@/lib/doc/text';
+import { siteUrl } from '@/lib/env';
 import { requireStaff } from '@/modules/auth/staff';
 import { getArticle, publishDue } from '@/modules/editor/queries';
 import { mediaByIds } from '@/modules/media/queries';
+import { getSeoSettings } from '@/modules/seo/queries';
 import { listAuthors, listSections, listTags } from '@/modules/taxonomy/queries';
 import { ArticleEditor } from './ArticleEditor';
 
@@ -24,9 +26,10 @@ export default async function EditArticlePage({ params, searchParams }: { params
   const [{ id }, { notice }] = await Promise.all([params, searchParams]);
   if (!UUID.test(id)) notFound();
   await publishDue();
-  const [article, sections, authors, tags] = await Promise.all([getArticle(id), listSections(), listAuthors(), listTags()]);
+  const [article, sections, authors, tags, settings] = await Promise.all([getArticle(id), listSections(), listAuthors(), listTags(), getSeoSettings()]);
   if (!article) notFound();
-  const media = await mediaByIds([article.lead_media_id, ...bodyMediaIds(sanitizeDoc(article.body))]);
+  const media = await mediaByIds([article.lead_media_id, article.seo.ogMediaId, ...bodyMediaIds(sanitizeDoc(article.body))]);
+  const origin = siteUrl();
 
   return (
     <ArticleEditor
@@ -37,6 +40,13 @@ export default async function EditArticlePage({ params, searchParams }: { params
       tags={tags.map(({ id: tid, name }) => ({ id: tid, name }))}
       media={[...media.values()]}
       notice={notice ? (NOTICES[notice] ?? null) : null}
+      seoContext={{
+        origin,
+        siteHost: new URL(origin).hostname.replace(/^www\./, ''),
+        siteName: settings.siteName,
+        titleTemplate: settings.titleTemplate,
+        indexing: settings.indexing,
+      }}
     />
   );
 }

@@ -25,7 +25,7 @@ const NOTICES: Record<string, string> = {
   'delete-failed': 'The image could not be deleted. Try again.',
 };
 
-const ROLE: Record<string, string> = { lead: 'Lead image', body: 'In the text', photo: 'Author photo' };
+const ROLE: Record<string, string> = { lead: 'Lead image', body: 'In the text', photo: 'Author photo', social: 'Social image' };
 
 export default async function MediaItemPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ notice?: string }> }) {
   await requireStaff();
