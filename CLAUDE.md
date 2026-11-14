@@ -136,6 +136,10 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
 
 - Each finished plan ships as `presscompass-vX.Y.Z.zip`: a clean clone of `main` with history and the version tag,
   no `.env`, no `node_modules`. `package.json` version, tag and `CHANGELOG.md` match.
+- The clone's `.git/config` must point `origin` at `https://github.com/vanhallen28/presscompass.git` (with
+  `branch.main.remote origin`, `http.postBuffer 524288000`, `http.version HTTP/1.1`): the owner unzips a fresh folder and
+  pushes from it, so a missing or local `origin` makes `git push` fail ("'origin' does not appear to be a git repository").
+  Check with `unzip -p presscompass-vX.Y.Z.zip presscompass/.git/config` before sending.
 - Terminal commands for the owner use npm and contain no `#` comments (zsh passes them on as arguments).
 - The owner pushes from their Mac. Install commands end with `git commit --amend --no-edit --reset-author` before
   `git push`, because Vercel Hobby only deploys commits authored by the account owner.
