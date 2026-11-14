@@ -2,6 +2,7 @@
 
 import { refresh } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { after } from 'next/server';
 import { UUID } from '@/lib/doc/schema';
 import { sanitizeDoc } from '@/lib/doc/sanitize';
 import { bodyMediaIds, docText, readingMinutes, wordCount } from '@/lib/doc/text';
@@ -11,6 +12,7 @@ import { formatWib } from '@/lib/time';
 import { requireStaff } from '@/modules/auth/staff';
 import { mediaByIds } from '@/modules/media/queries';
 import { readArticleSeo } from '@/modules/seo/article';
+import { syncCdnRedirects } from '@/modules/seo/cdn-sync';
 import { getSeoSettings } from '@/modules/seo/queries';
 import { refreshArticles } from '@/modules/site/invalidate';
 import { type FieldErrors, parseArticleInput } from './input';
@@ -104,7 +106,11 @@ export async function saveArticle(raw: unknown, intent: Intent): Promise<SaveRes
   }
   const saved = data as { version: number; slug: string; status: ArticleStatus; published_at: string | null; scheduled_at: string | null; updated_at: string };
   // Readers only see published articles: refresh the site when this one is, or just stopped being, published.
-  if (saved.status === 'published' || (current as { status: ArticleStatus }).status === 'published') refreshArticles([input.value.id]);
+  if (saved.status === 'published' || (current as { status: ArticleStatus }).status === 'published') {
+    refreshArticles([input.value.id]);
+    // A new address adds an automatic redirect from the old one; Vercel's CDN gets it after the response.
+    if (intent !== 'autosave') after(syncCdnRedirects);
+  }
   return {
     ok: true,
     version: saved.version,

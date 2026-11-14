@@ -185,6 +185,7 @@ test.describe('Newsroom SEO pages', () => {
     await main(page)
       .getByRole('textbox', { name: 'New address' })
       .fill(`/${section.slug}/${slugFor(title)}`);
+    await expect(main(page).getByText(/Vercel redirects are not connected/)).toBeVisible();
     await main(page).getByRole('button', { name: 'Save redirect' }).click();
     await expect(main(page).getByText('Redirect saved.')).toBeVisible();
     await expect(main(page).getByRole('cell', { name: old, exact: true })).toBeVisible();

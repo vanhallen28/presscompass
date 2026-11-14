@@ -96,9 +96,9 @@ export async function checkSupabase(e) {
   }
   if (data?.value !== 'presscompass')
     return bad('This Supabase project is not set up for PressCompass.', 'Run npm run db:link and npm run db:push for the right project.');
-  // The function added by the newest migration (v0.6.0, SEO): missing means npm run db:push has not run since.
-  const newest = await supabase.rpc('site_seo');
-  if (newest.error) return bad('The newest database changes are missing (site_seo, v0.6.0).', 'Run npm run db:link and npm run db:push.');
+  // The function added by the newest migration (v0.6.1, redirects for Vercel): missing means npm run db:push has not run since.
+  const newest = await supabase.rpc('cdn_redirects');
+  if (newest.error) return bad('The newest database changes are missing (cdn_redirects, v0.6.1).', 'Run npm run db:link and npm run db:push.');
   return ok('Supabase project: reachable, migrations applied');
 }
 

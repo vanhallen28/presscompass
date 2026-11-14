@@ -100,3 +100,11 @@ export async function getCard(id: string): Promise<Card | null> {
   cacheTag(TAGS.site, TAGS.articles, TAGS.article(id));
   return rpc<Card | null>('site_card', { p_id: id });
 }
+
+/** The last copy of the redirects to Vercel's CDN (null before the first one). */
+export async function getCdnState(): Promise<{ hash: string; count: number; syncedAt: string; error: string } | null> {
+  const supabase = await createSessionClient();
+  const { data, error } = await supabase.rpc('cdn_redirects_state');
+  if (error) return null;
+  return (data as { hash: string; count: number; syncedAt: string; error: string } | null) ?? null;
+}

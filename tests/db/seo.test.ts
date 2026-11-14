@@ -175,3 +175,35 @@ describe('SEO panel lookup', () => {
     expect(uses).toEqual([expect.objectContaining({ role: 'social', title: 'Rice prices' })]);
   });
 });
+
+describe('redirects for the CDN', () => {
+  it('lists permanent redirects whose old address has no page, for the secret key only', async () => {
+    await db.client.query(
+      `insert into public.redirects (from_path, to_path, code, auto) values
+         ('/old-story', '/business/rice-prices', 308, false),
+         ('/business/rice-prices', '/business/old-rice', 308, false),
+         ('/business', '/science', 308, false),
+         ('/about', '/business', 308, false),
+         ('/gone', '', 410, false),
+         ('/author/rani', '/', 308, false),
+         ('/tag/rice', '/', 308, false),
+         ('/business/draft', '/business/rice-prices', 308, true)`,
+    );
+    const rows = await db.as('service_role', null, (q) => q<{ r: { source: string; destination: string }[] }>(`select public.cdn_redirects() as r`));
+    expect(rows[0].r).toEqual([
+      { source: '/business/draft', destination: '/business/rice-prices' },
+      { source: '/old-story', destination: '/business/rice-prices' },
+    ]);
+    await expect(asAnon((q) => q(`select public.cdn_redirects()`))).rejects.toThrow(/permission denied/);
+    await expect(asOwner((q) => q(`select public.cdn_redirects()`))).rejects.toThrow(/permission denied/);
+    await db.client.query(`delete from public.redirects`);
+  });
+
+  it('shows staff the state of the last copy to Vercel', async () => {
+    expect(await asOwner((q) => q(`select public.cdn_redirects_state() as s`))).toEqual([{ s: null }]);
+    await db.client.query(`insert into public.app_meta (key, value) values ('cdn_redirects', '{"count": 2, "error": ""}')`);
+    expect(await asOwner((q) => q(`select public.cdn_redirects_state() as s`))).toEqual([{ s: { count: 2, error: '' } }]);
+    await expect(db.as('authenticated', STRANGER, (q) => q(`select public.cdn_redirects_state()`))).rejects.toThrow(/not_staff/);
+    await expect(asAnon((q) => q(`select public.cdn_redirects_state()`))).rejects.toThrow(/permission denied/);
+  });
+});

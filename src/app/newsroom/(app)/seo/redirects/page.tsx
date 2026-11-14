@@ -6,7 +6,8 @@ import { Notice, PageHeader, ui } from '@/components/newsroom/ui';
 import { formatWib } from '@/lib/time';
 import { requireStaff } from '@/modules/auth/staff';
 import { deleteRedirect } from '@/modules/seo/actions';
-import { listRedirects } from '@/modules/seo/queries';
+import { cdnConfigured } from '@/modules/seo/cdn-sync';
+import { getCdnState, listRedirects } from '@/modules/seo/queries';
 
 export const metadata: Metadata = { title: 'Redirects' };
 
@@ -17,7 +18,8 @@ const NOTICES: Record<string, string> = { saved: 'Redirect saved.', deleted: 'Re
 
 export default async function RedirectsPage({ searchParams }: { searchParams: Promise<{ notice?: string; from?: string }> }) {
   await requireStaff();
-  const [{ notice, from }, redirects] = await Promise.all([searchParams, listRedirects()]);
+  const [{ notice, from }, redirects, cdn] = await Promise.all([searchParams, listRedirects(), getCdnState()]);
+  const { production, configured } = cdnConfigured();
   return (
     <>
       <PageHeader
@@ -25,6 +27,17 @@ export default async function RedirectsPage({ searchParams }: { searchParams: Pr
         description="Old addresses and where they lead. Changing an article's address or section adds one automatically; add your own for anything else."
       />
       {notice && NOTICES[notice] && <Notice tone="success">{NOTICES[notice]}</Notice>}
+      <p className={styles.intro}>
+        {!configured
+          ? 'Vercel redirects are not connected, so the site redirects old addresses itself. Connect them (docs/ops/setup.md, step J) so search engines get a proper permanent redirect on every visit.'
+          : !production
+            ? 'Vercel redirects are connected; they are updated from the live site only.'
+            : cdn?.error
+              ? `Vercel redirects: the last update failed (${cdn.error}). The next try is within 5 minutes.`
+              : cdn?.syncedAt
+                ? `Vercel serves ${cdn.count} ${cdn.count === 1 ? 'redirect' : 'redirects'}, updated ${formatWib(cdn.syncedAt, 'short')} WIB. Changes reach Vercel within seconds.`
+                : 'Vercel redirects are connected; the first update runs within 5 minutes.'}
+      </p>
       <div className={styles.page}>
         <RedirectForm from={typeof from === 'string' ? from.slice(0, 300) : ''} />
         {redirects.length === 0 ? (

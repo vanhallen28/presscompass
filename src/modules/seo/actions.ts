@@ -1,11 +1,13 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { after } from 'next/server';
 import { UUID } from '@/lib/doc/schema';
 import { siteUrl } from '@/lib/env';
 import { createSessionClient } from '@/lib/supabase/clients';
 import { requireStaff } from '@/modules/auth/staff';
 import { refreshSite } from '@/modules/site/invalidate';
+import { syncCdnRedirects } from './cdn-sync';
 import { parseRedirect, type RedirectErrors, type RedirectInput } from './redirects';
 import { parseSeoSettings, type SeoSettings, type SeoSettingsErrors } from './settings';
 
@@ -74,6 +76,7 @@ export async function saveRedirect(_prev: RedirectState, form: FormData): Promis
   if (error) return { errors: {}, values: parsed.value, message: `The redirect could not be saved. ${error.message}` };
   await supabase.from('not_found_log').delete().eq('path', parsed.value.from);
   refreshSite();
+  after(syncCdnRedirects);
   redirect('/newsroom/seo/redirects?notice=saved');
 }
 
@@ -84,6 +87,7 @@ export async function deleteRedirect(form: FormData) {
     const supabase = await createSessionClient();
     await supabase.from('redirects').delete().eq('id', id);
     refreshSite();
+    after(syncCdnRedirects);
   }
   redirect('/newsroom/seo/redirects?notice=deleted');
 }
