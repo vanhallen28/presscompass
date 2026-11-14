@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
+import { JsonLd } from '@/components/site/JsonLd';
 import { ListView } from '@/components/site/ListView';
 import { StaticPageView } from '@/components/site/StaticPageView';
+import { metaContext } from '@/modules/seo/context';
+import { breadcrumbs } from '@/modules/seo/jsonld';
+import { listMetadata } from '@/modules/seo/metadata';
 import { sectionParams } from '@/modules/site/params';
 import { getList, getPage } from '@/modules/site/queries';
 
@@ -17,10 +21,12 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { section } = await params;
-  const list = await getList('section', section);
-  if (list?.subject) return { title: list.subject.name, description: list.subject.description || undefined };
+  const [list, ctx] = await Promise.all([getList('section', section), metaContext()]);
+  if (list?.subject) {
+    return listMetadata(ctx, { title: list.subject.name, description: list.subject.description, path: `/${section}`, feed: `/${section}/feed.xml` });
+  }
   const page = await getPage(section);
-  return page ? { title: page.title, description: page.description || undefined } : {};
+  return page ? listMetadata(ctx, { title: page.title, description: page.description, path: `/${section}` }) : {};
 }
 
 export default async function SectionPage({ params }: Props) {
@@ -30,5 +36,18 @@ export default async function SectionPage({ params }: Props) {
     const page = await getPage(section);
     if (page) return <StaticPageView page={page} />;
   }
-  return <ListView kind="section" slug={section} page={1} />;
+  const ctx = await metaContext();
+  return (
+    <>
+      {list?.subject && (
+        <JsonLd
+          data={breadcrumbs(ctx, [
+            { name: 'Home', path: '/' },
+            { name: list.subject.name, path: `/${section}` },
+          ])}
+        />
+      )}
+      <ListView kind="section" slug={section} page={1} />
+    </>
+  );
 }

@@ -5,17 +5,19 @@ import { ConsentBanner } from '@/components/site/ads/ConsentBanner';
 import { getSiteAds } from '@/modules/ads/queries';
 import { adsActive } from '@/modules/ads/types';
 import { parseVerificationMeta } from '@/modules/ads/validate';
+import { metaContext } from '@/modules/seo/context';
+import { siteMetadata } from '@/modules/seo/metadata';
 
 // Shared by every public page: verification tags for ad networks, and (while ads are on) the ad runtime and
 // the cookie banner. The early consent script is in the root layout (src/app/layout.tsx). The Newsroom and the
 // 404 page sit outside this layout.
 
 export async function generateMetadata(): Promise<Metadata> {
-  const ads = await getSiteAds();
+  const [ads, ctx] = await Promise.all([getSiteAds(), metaContext()]);
   const other: Record<string, string> = {};
   if (ads.adsenseClient) other['google-adsense-account'] = ads.adsenseClient;
   for (const tag of parseVerificationMeta(ads.verificationMeta).tags) other[tag.name] = tag.content;
-  return Object.keys(other).length ? { other } : {};
+  return { ...siteMetadata(ctx), ...(Object.keys(other).length ? { other } : {}) };
 }
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {

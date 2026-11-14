@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ListView } from '@/components/site/ListView';
 import { pageNumber } from '@/modules/site/format';
+import { metaContext } from '@/modules/seo/context';
+import { listMetadata } from '@/modules/seo/metadata';
 import { sectionParams } from '@/modules/site/params';
 import { getList } from '@/modules/site/queries';
 
@@ -17,8 +19,11 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { section, n } = await params;
-  const list = await getList('section', section);
-  return list?.subject ? { title: `${list.subject.name}, page ${n}` } : {};
+  const [list, ctx] = await Promise.all([getList('section', section), metaContext()]);
+  const page = pageNumber(n);
+  return list?.subject && page
+    ? listMetadata(ctx, { title: list.subject.name, description: list.subject.description, path: `/${section}`, page, feed: `/${section}/feed.xml` })
+    : {};
 }
 
 export default async function SectionPageN({ params }: Props) {

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { ListView } from '@/components/site/ListView';
+import { metaContext } from '@/modules/seo/context';
+import { listMetadata, subjectDescription } from '@/modules/seo/metadata';
 import { PLACEHOLDER } from '@/modules/site/params';
 import { getList } from '@/modules/site/queries';
 
@@ -16,8 +18,8 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const list = await getList('tag', slug);
-  return list?.subject ? { title: list.subject.name } : {};
+  const [list, ctx] = await Promise.all([getList('tag', slug), metaContext()]);
+  return list?.subject ? listMetadata(ctx, { title: list.subject.name, description: subjectDescription(list.subject), path: `/tag/${slug}` }) : {};
 }
 
 export default async function TagPage({ params }: Props) {

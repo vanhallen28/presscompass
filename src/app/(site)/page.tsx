@@ -3,24 +3,28 @@ import Link from 'next/link';
 import { Fragment } from 'react';
 import { Icon } from '@/components/ds/Icon';
 import { AdSlot } from '@/components/site/ads/AdSlot';
+import { JsonLd } from '@/components/site/JsonLd';
 import { SitePage } from '@/components/site/SitePage';
 import { CardStory, LeadStory, OpinionStory, TopStory } from '@/components/site/Stories';
 import styles from '@/components/site/site.module.css';
 import { getSiteAds } from '@/modules/ads/queries';
+import { metaContext } from '@/modules/seo/context';
+import { homeJsonLd } from '@/modules/seo/jsonld';
+import { homeMetadata } from '@/modules/seo/metadata';
 import { getHome } from '@/modules/site/queries';
 
-export const metadata: Metadata = {
-  title: { absolute: 'PressCompass · News with a sense of direction' },
-  description: 'Independent, English-language news about Indonesia. Facts verified, context explained.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return homeMetadata(await metaContext());
+}
 
 // The front page (v0.4.0 fills it automatically; the homepage builder arrives in Plan 5).
 export default async function HomePage() {
-  const [home, ads] = await Promise.all([getHome(), getSiteAds()]);
+  const [home, ads, ctx] = await Promise.all([getHome(), getSiteAds(), metaContext()]);
   const [lead, ...top] = home.top;
 
   return (
     <SitePage page="home">
+      <JsonLd data={homeJsonLd(ctx)} />
       <div className={styles.wrap}>
         {lead ? (
           <section className={styles.leadGrid} aria-label="Top stories">

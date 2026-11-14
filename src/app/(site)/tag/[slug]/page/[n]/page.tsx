@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ListView } from '@/components/site/ListView';
 import { pageNumber } from '@/modules/site/format';
+import { metaContext } from '@/modules/seo/context';
+import { listMetadata, subjectDescription } from '@/modules/seo/metadata';
 import { PLACEHOLDER } from '@/modules/site/params';
 import { getList } from '@/modules/site/queries';
 
@@ -17,8 +19,11 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, n } = await params;
-  const list = await getList('tag', slug);
-  return list?.subject ? { title: `${list.subject.name}, page ${n}` } : {};
+  const [list, ctx] = await Promise.all([getList('tag', slug), metaContext()]);
+  const page = pageNumber(n);
+  return list?.subject && page
+    ? listMetadata(ctx, { title: list.subject.name, description: subjectDescription(list.subject), path: `/tag/${slug}`, page })
+    : {};
 }
 
 export default async function TagPageN({ params }: Props) {

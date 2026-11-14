@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   // folder) otherwise makes Next.js print a root warning on every start.
   turbopack: { root: __dirname },
   outputFileTracingRoot: __dirname,
+  // The social card route reads its fonts from disk; make sure Vercel ships them with the function.
+  outputFileTracingIncludes: { '/og/*': ['./src/fonts/og/**/*'] },
 };
 
 export default nextConfig;

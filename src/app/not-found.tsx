@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SearchForm } from '@/components/site/SearchForm';
+import { NotFoundBeacon } from '@/components/site/NotFoundBeacon';
 import { SitePage } from '@/components/site/SitePage';
 import { TopStory } from '@/components/site/Stories';
 import styles from '@/components/site/site.module.css';
@@ -12,6 +13,7 @@ export default async function NotFound() {
   const latest = await getList('latest', null, 1, 5);
   return (
     <SitePage page="not-found" ads={false}>
+      <NotFoundBeacon />
       <div className={styles.wrap}>
         <header className={`${styles.pageHead} ${styles.pageHeadPlain}`}>
           <h1 className={styles.h1}>Page not found</h1>

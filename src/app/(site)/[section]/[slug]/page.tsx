@@ -4,6 +4,7 @@ import { permanentRedirect } from 'next/navigation';
 import { Icon } from '@/components/ds/Icon';
 import { ArticleView } from '@/components/site/ArticleView';
 import { AdSlot } from '@/components/site/ads/AdSlot';
+import { JsonLd } from '@/components/site/JsonLd';
 import adStyles from '@/components/site/ads/ads.module.css';
 import { ShareButtons } from '@/components/site/ShareButtons';
 import { SitePage } from '@/components/site/SitePage';
@@ -13,6 +14,9 @@ import { sanitizeDoc } from '@/lib/doc/sanitize';
 import { getSiteAds } from '@/modules/ads/queries';
 import { INLINE_PLACEMENTS, slotFor } from '@/modules/ads/types';
 import { inlinePositions } from '@/modules/ads/validate';
+import { metaContext } from '@/modules/seo/context';
+import { articleJsonLd, breadcrumbs } from '@/modules/seo/jsonld';
+import { articleMetadata } from '@/modules/seo/metadata';
 import { articleHref } from '@/modules/site/format';
 import { missing } from '@/modules/site/missing';
 import { recentArticleParams } from '@/modules/site/params';
@@ -30,8 +34,8 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getArticle(slug);
-  return article ? { title: article.title, description: article.standfirst || undefined } : {};
+  const [article, ctx] = await Promise.all([getArticle(slug), metaContext()]);
+  return article ? articleMetadata(ctx, article) : {};
 }
 
 export default async function ArticlePage({ params }: Props) {
@@ -41,7 +45,7 @@ export default async function ArticlePage({ params }: Props) {
   // One address per article: a section in the address that is not the article's own moves to the right one.
   if (article.section?.slug !== section) permanentRedirect(articleHref(article));
 
-  const ads = await getSiteAds();
+  const [ads, ctx] = await Promise.all([getSiteAds(), metaContext()]);
   const body = sanitizeDoc(article.body);
   const links = new Map(article.links.map((link) => [link.id, { title: link.title, href: articleHref(link) }]));
   // In-article ads after the chosen paragraphs (text paragraphs only, and only with two more after them).
@@ -65,6 +69,16 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <SitePage page={page} active={section}>
+      <JsonLd data={articleJsonLd(ctx, article)} />
+      {article.section && (
+        <JsonLd
+          data={breadcrumbs(ctx, [
+            { name: 'Home', path: '/' },
+            { name: article.section.name, path: `/${article.section.slug}` },
+            { name: article.title },
+          ])}
+        />
+      )}
       <div className={styles.wrap}>
         <ArticleView
           id={`article-${article.id}`}
