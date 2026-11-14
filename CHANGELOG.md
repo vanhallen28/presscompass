@@ -1,5 +1,15 @@
 # Riwayat versi
 
+## v0.6.1 · 14 November 2026 · Vercel Pro
+
+Proyek Vercel kini Pro, jadi tiga hal yang tertahan batas Hobby dijalankan:
+
+- **Iklan boleh dinyalakan.** Peringatan "Vercel Hobby is for non-commercial use only" di halaman Ads diganti catatan bahwa iklan diizinkan di Pro. Sakelarnya tetap Anda yang menyalakan (setup langkah H), sebaiknya setelah AdSense menyetujui situs.
+- **Jadwal terbit setiap 5 menit lewat Vercel Cron** (sebelumnya sekali sehari, dengan Supabase Cron sebagai pengganti). Supabase Cron boleh dimatikan (setup langkah F).
+- **Redirect sungguhan lewat CDN Vercel** (bulk redirects): redirect otomatis dan manual disalin ke Vercel, sehingga alamat lama dijawab 308 dengan header `Location` di setiap kunjungan, bukan lewat halaman. Butuh token Vercel (setup langkah J); tanpa itu redirect tetap berjalan seperti v0.6.0. Status salinan tampil di Newsroom, **SEO, Redirects**.
+- **Langkah tambahan:** `npm run db:push` (migrasi baru `20261119000100_cdn_redirects.sql`), lalu setup langkah J.
+- Tes: 179 unit, 58 database, 71 E2E.
+
 ## v0.6.0 · 14 November 2026 · Editor ala WordPress dan skor SEO (Rencana 6)
 
 - **Editor artikel bergaya WordPress:**

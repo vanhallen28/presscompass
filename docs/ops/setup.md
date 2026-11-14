@@ -49,7 +49,7 @@ Setiap pembaruan yang membawa migrasi cukup menjalankan `npm run db:push` sekali
 1. Buat repo **privat** baru bernama `presscompass` di GitHub, tanpa README.
 2. Kirim kode (perintah push ada di pesan pengiriman). CI berjalan otomatis; tunggu centang hijau.
 
-## D. Vercel (Hobby)
+## D. Vercel (Pro)
 
 1. **Add New, Project**, impor repo `presscompass`. Framework terdeteksi Next.js.
 2. **Environment Variables** sebelum deploy pertama. Biarkan semua lingkungan (Production, Preview, Development) tercentang, karena semuanya memakai proyek yang sama:
@@ -105,47 +105,26 @@ Kuota Free: 25 kredit per bulan (1 kredit = 1.000 transformasi, atau 1 GB penyim
 
 ## F. Jadwal terbit (cron)
 
-Artikel terjadwal diterbitkan oleh `GET /api/cron/run`. Vercel Hobby hanya boleh memanggilnya sekali sehari (sekitar 06.00 WIB, sudah diatur di `vercel.json`). Supaya artikel terjadwal terbit paling lambat 5 menit setelah waktunya, Supabase Cron memanggil endpoint yang sama setiap 5 menit. Gratis, dan sekaligus menjaga proyek Supabase Free tidak dijeda karena sepi. Membuka Newsroom juga menerbitkan artikel yang jatuh tempo.
+Artikel terjadwal diterbitkan oleh `GET /api/cron/run`. Sejak proyek Vercel memakai paket **Pro**, Vercel Cron memanggilnya **setiap 5 menit** (sudah diatur di `vercel.json`), jadi artikel terjadwal terbit paling lambat 5 menit setelah waktunya. Panggilan yang sama juga menyalin redirect ke Vercel (langkah J) dan menjaga proyek Supabase Free tetap aktif. Membuka Newsroom juga menerbitkan artikel yang jatuh tempo.
 
-1. Buat rahasia di Terminal Mac:
+1. Buat rahasia di Terminal Mac (lewati bila `CRON_SECRET` sudah ada di Vercel):
 
    ```bash
    openssl rand -hex 32
    ```
 
    Salin keluarannya (64 karakter) ke pengelola password. Jangan kirim ke siapa pun.
-2. **Vercel, Settings, Environment Variables:** tambah `CRON_SECRET` dengan nilai itu, semua lingkungan tercentang. Lalu **Deployments, titik tiga di deploy terbaru, Redeploy**.
-3. **Supabase, Database, Extensions:** nyalakan **pg_cron** dan **pg_net**.
-4. **Supabase, Integrations, Vault, Add new secret:** nama `cron_secret`, nilai sama persis dengan `CRON_SECRET`. Rahasia tidak diketik di SQL Editor, supaya tidak tersimpan di riwayat kueri.
-5. **Supabase, SQL Editor**, jalankan (ganti alamat bila domain belum aktif, misalnya dengan alamat `….vercel.app` dari Vercel, Settings, Domains):
+2. **Vercel, Settings, Environment Variables:** `CRON_SECRET` dengan nilai itu, semua lingkungan tercentang. Vercel Cron mengirimnya sendiri ke endpoint. Lalu **Deployments, titik tiga di deploy terbaru, Redeploy**.
+3. Periksa setelah 10 menit: **Vercel, proyek, Settings, Cron Jobs** menampilkan `/api/cron/run` dengan jadwal `*/5 * * * *`, dan **Logs** dengan path `/api/cron/run` menampilkan 12 permintaan per jam berstatus 200.
+4. **Supabase Cron dari versi sebelumnya tidak diperlukan lagi.** Bila dulu Anda memasangnya, matikan di **Supabase, SQL Editor**:
 
    ```sql
-   select cron.schedule(
-     'presscompass-run',
-     '*/5 * * * *',
-     $$
-     select net.http_get(
-       url := 'https://presscompass.site/api/cron/run',
-       headers := jsonb_build_object(
-         'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')
-       ),
-       timeout_milliseconds := 30000
-     );
-     $$
-   );
+   select cron.unschedule('presscompass-run');
    ```
 
-   **Hasil yang diharapkan:** satu baris berisi nomor job.
-6. Periksa setelah 10 menit:
+   Bila tetap menyala pun aman: endpoint hanya menerbitkan artikel yang memang sudah jatuh tempo.
 
-   ```sql
-   select status, return_message, start_time from cron.job_run_details order by start_time desc limit 3;
-   select status_code, error_msg, created from net._http_response order by created desc limit 3;
-   ```
-
-   Hasilnya `succeeded` dan `status_code` 200. Di Vercel, Logs dengan path `/api/cron/run` menampilkan 12 permintaan per jam.
-
-Mematikan: `select cron.unschedule('presscompass-run');`. Rahasia hanya memberi izin menerbitkan artikel yang memang sudah jatuh tempo (aman bila terpanggil berlebih). Bila bocor, buat nilai baru, ganti di Vercel dan Vault, lalu Redeploy.
+Catatan: bila proyek Vercel kembali ke Hobby, deploy akan gagal ("Hobby accounts are limited to daily cron jobs"). Ubah jadwal di `vercel.json` menjadi `0 23 * * *` dan pasang lagi Supabase Cron (lihat `docs/ops/setup.md` di v0.6.0).
 
 ## G. Konten awal (opsional)
 
@@ -163,7 +142,7 @@ Untuk memeriksa artikel dulu di Newsroom: tambahkan `--draft`, lalu terbitkan da
 
 ## H. Iklan: AdSense, Ad Manager, Meta Pixel, jaringan lain
 
-Semua diisi di Newsroom, **Site, Ads**. Iklan baru tampil setelah sakelar **Show ads and run tracking code on the site** dinyalakan, dan sakelar itu hanya boleh dinyalakan setelah proyek Vercel pindah ke **Pro**: aturan Fair Use Vercel menyebut Hobby hanya untuk penggunaan non-komersial, dan iklan (termasuk AdSense) termasuk komersial.
+Semua diisi di Newsroom, **Site, Ads**. Iklan baru tampil setelah sakelar **Show ads and run tracking code on the site** dinyalakan. Iklan termasuk penggunaan komersial, yang diizinkan Vercel di paket **Pro** (proyek PressCompass sudah Pro sejak 14 November 2026); jangan kembali ke Hobby selama iklan menyala.
 
 1. **Halaman wajib.** Di **Pages**, lengkapi dan terbitkan **Privacy policy**, **About**, dan **Contact** (drafnya dari `npm run content:starter`). Ganti `[add your contact email here]` dengan email Anda. Teks Privacy policy sudah sesuai perilaku situs, tetapi itu tanggung jawab Anda; periksa sebelum terbit.
 2. **Ads, Consent:** isi **Privacy policy link** `/privacy-policy`. Biarkan **Ask readers before loading ads and tracking code** menyala.
@@ -173,7 +152,7 @@ Semua diisi di Newsroom, **Site, Ads**. Iklan baru tampil setelah sakelar **Show
 6. **Google Ad Manager:** di slot pilih **Google Ad Manager (GPT)**, isi path unit (`/kode-jaringan/nama-unit`, dari Ad Manager: Inventory, Ad units, Tags) dan ukuran (`300x250, 336x280`).
 7. **Jaringan lain** (Adsterra, Media.net, PropellerAds, dan sejenisnya): kode banner ke slot (**Code from another network**); kode yang diminta di `<head>` atau sebelum `</body>` ke **Other code**; tag `<meta>` verifikasi mereka ke **Verification tags**; baris ads.txt mereka ke **ads.txt, Other lines**.
 8. **Meta Pixel:** isi **Pixel ID** (Meta Events Manager, Data sources).
-9. **Menyalakan:** setelah pindah ke Vercel Pro, centang **Show ads and run tracking code on the site**, Save. Buka situs di jendela penyamaran: banner muncul; setelah **Accept all**, slot terisi.
+9. **Menyalakan:** setelah AdSense menyetujui situs (atau jaringan lain siap), centang **Show ads and run tracking code on the site**, Save. Buka situs di jendela penyamaran: banner muncul; setelah **Accept all**, slot terisi.
 
 Mematikan: hapus centang sakelar, Save. Slot, banner, dan semua kode hilang dari situs dalam beberapa detik; tag verifikasi dan `ads.txt` tetap.
 
@@ -186,6 +165,23 @@ Semua di Newsroom, grup **SEO**.
 3. **Search Console** (https://search.google.com/search-console): tambahkan properti **Domain** `presscompass.site` dan verifikasi lewat DNS (Google memberi satu baris TXT untuk pengelola domain Anda). Lalu di **Sitemaps**, kirim `https://presscompass.site/sitemap.xml` dan `https://presscompass.site/news-sitemap.xml`. Pengiriman otomatis setiap kali terbit datang di v0.7.0.
 4. **Saat menulis:** buka tab **SEO** di editor, isi **Focus keyphrase**, lalu ikuti daftar **Problems** dan **Improvements**. Skor hanya saran; aturan terbit tidak berubah.
 5. **404 log:** periksa sesekali. Untuk alamat lama yang masih dicari, klik **Create redirect** dan isi alamat barunya.
+
+## J. Redirect lewat Vercel (Pro)
+
+Dengan paket Pro, redirect dari Newsroom (otomatis saat alamat artikel berubah, dan yang Anda buat di **SEO, Redirects**) dilayani langsung oleh CDN Vercel: pembaca dan Google mendapat redirect permanen 308 yang sungguhan di setiap kunjungan. Tanpa langkah ini redirect tetap jalan, tetapi lewat halaman.
+
+1. **Token:** Vercel, foto profil, **Account Settings, Tokens, Create Token**. Nama `PressCompass redirects`, **Scope** tim Anda (bukan akun pribadi), **Expiration** paling lama yang tersedia. Salin token ke pengelola password; jangan kirim ke siapa pun.
+2. **Team ID:** Vercel, pilih tim, **Settings, General**, salin **Team ID** (`team_...`).
+3. **Project ID:** proyek presscompass, **Settings, General**, salin **Project ID** (`prj_...`).
+4. **Vercel, proyek, Settings, Environment Variables**, centang **Production** saja:
+   - `VERCEL_REDIRECTS_TOKEN` = token dari langkah 1;
+   - `VERCEL_REDIRECTS_TEAM_ID` = Team ID;
+   - `VERCEL_REDIRECTS_PROJECT_ID` = Project ID.
+
+   Lalu **Redeploy** deploy Production terbaru.
+5. Periksa setelah 5 menit: Newsroom, **SEO, Redirects** menulis "Vercel serves N redirects, updated …". Di Vercel, proyek, **Redirects**, daftar yang sama tampil. Kunjungi satu alamat lama: browser langsung pindah, dan `curl -sI https://presscompass.site/alamat-lama` menampilkan `308` dan baris `location:`.
+
+Paket Pro mencakup 1.000 redirect seperti ini per proyek; lebih dari itu dikenai biaya kecil per 25.000 (lihat Vercel, Usage). Redirect "Gone (Page not found)" tidak ikut disalin; situs tetap menampilkan Page not found.
 
 ## Bila ada masalah
 
@@ -209,6 +205,8 @@ Semua di Newsroom, grup **SEO**.
 | Slot tampil kosong setelah Accept all | unit AdSense baru atau situs belum disetujui (AdSense mengisi setelah disetujui), atau angka `data-ad-slot` salah |
 | Search Console: "Couldn't fetch" untuk sitemap | buka alamat sitemap di browser; bila tampil XML, tunggu Google mencoba lagi (bisa sehari). Pastikan indexing sudah dinyalakan di SEO settings dan deploy Production yang terbaru |
 | Pratinjau Facebook atau WhatsApp masih memakai gambar lama | platform itu menyimpan kartu lama beberapa hari; tanda Major update memperbarui alamat gambar otomatis. Facebook bisa dipaksa lewat Sharing Debugger |
+| Redirects menulis "the last update failed (Vercel answered 403 ...)" | token tidak punya akses ke tim, atau Team ID/Project ID salah: buat token dengan Scope tim (langkah J1), periksa ketiga env, lalu Redeploy |
+| Deploy gagal: "Hobby accounts are limited to daily cron jobs" | proyek Vercel kembali ke Hobby; lihat catatan di langkah F |
 | Beranda menulis "The first stories are on their way" | belum ada artikel terbit: jalankan `npm run check`, perbaiki yang bertanda ✗, lalu `npm run content:starter` |
 | `npm run dev`: "Supabase did not answer within 8.5 seconds" | koneksi ke Supabase tersendat atau proyek sedang dijeda/dipulihkan (Supabase Free menjeda proyek setelah 7 hari tanpa aktivitas): buka dashboard Supabase, pastikan proyek aktif, lalu muat ulang halaman |
 | Deploy Vercel diblokir: commit author tidak punya akses | perintah pasang selalu memuat `git commit --amend --no-edit --reset-author` sebelum push; jalankan lalu push lagi |

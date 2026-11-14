@@ -24,10 +24,10 @@ export function AdSettingsForm({ initial }: { initial: AdSettings }) {
 
       <fieldset className={styles.card}>
         <legend>Status</legend>
-        <div className={styles.warning} role="note">
+        <div className={styles.intro} role="note">
           <p>
-            <b>Vercel Hobby is for non-commercial use only.</b> Showing ads makes the site commercial, so move the Vercel project to the Pro plan
-            before you turn this on.
+            Ads make the site commercial, which Vercel allows on the Pro plan (PressCompass runs on Pro). Keep the project on Pro while ads are
+            on.
           </p>
           <p>
             While ads are off, the AdSense verification tag, other verification tags and ads.txt still work, so you can apply to ad networks first.

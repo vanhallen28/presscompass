@@ -59,7 +59,7 @@
 
 ## Batasan yang tersisa
 
-- **Redirect dari cache tanpa header `Location`.** Next.js 16 (Cache Components) menjawab redirect yang sudah tersimpan di cache dengan status 308 tetapi tanpa header `Location`; browser tetap pindah lewat redirect di dalam halaman, dan kunjungan pertama mendapat 200 dengan redirect di dalam halaman. Redirect HTTP yang benar di semua kunjungan butuh `proxy.ts` untuk semua alamat publik (setiap kunjungan menjadi pemanggilan fungsi di Vercel), jadi ditimbang di Rencana 9 bersama 404 kunjungan pertama.
+- **Redirect dari cache tanpa header `Location`.** Next.js 16 (Cache Components) menjawab redirect yang sudah tersimpan di cache dengan status 308 tetapi tanpa header `Location`; browser tetap pindah lewat redirect di dalam halaman, dan kunjungan pertama mendapat 200 dengan redirect di dalam halaman. Redirect HTTP yang benar di semua kunjungan butuh `proxy.ts` untuk semua alamat publik (setiap kunjungan menjadi pemanggilan fungsi di Vercel), jadi ditimbang di Rencana 9 bersama 404 kunjungan pertama. **Diselesaikan di v0.6.1** setelah proyek pindah ke Vercel Pro: redirect disalin ke bulk redirects Vercel (CDN), tanpa `proxy.ts`.
 
 ## Sumber riset (diakses 14 November 2026)
 

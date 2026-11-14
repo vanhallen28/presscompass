@@ -1,6 +1,6 @@
 # PressCompass: rules for agents
 
-English-language news site about Indonesia with its own CMS (the Newsroom). Next.js on Vercel Hobby,
+English-language news site about Indonesia with its own CMS (the Newsroom). Next.js on Vercel Pro (Hobby until 14 November 2026),
 Supabase Free (Postgres, Auth), Cloudinary Free for images. No Docker anywhere. Node 26, npm only.
 
 Read first: `docs/specs/2026-11-13-presscompass-design.md` (spec), the current plan in `docs/plans/`,
@@ -71,7 +71,12 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
   params at the top, so a cached 404 or redirect keeps its status. Use `missing(path)` for anything not found.
 - Client JavaScript on the site only for the theme switch, share buttons, and (while ads are on) the consent banner and ad
   loaders; the menu is a `popover`, search a GET form.
-- System endpoints (`/api/cron/run`, `/api/revalidate`) check `CRON_SECRET` with `checkCronAuth`.
+- System endpoints (`/api/cron/run`, `/api/revalidate`) check `CRON_SECRET` with `checkCronAuth`. Vercel Cron (Pro) calls
+  `/api/cron/run` every 5 minutes (`vercel.json`); a cron schedule more often than daily fails deployment on Hobby.
+- Redirects reach Vercel's CDN as bulk redirects (`src/modules/seo/cdn-redirects.ts`, `cdn-sync.ts`): `cdn_redirects()` lists
+  the permanent ones whose old address has no page, `syncCdnRedirects()` replaces Vercel's set when the list changed (after a
+  redirect or article save, and from the cron job). Only on Vercel Production with `VERCEL_REDIRECTS_TOKEN`,
+  `VERCEL_REDIRECTS_TEAM_ID` and a project ID; otherwise `missing(path)` keeps redirecting inside the page.
 
 ## SEO (v0.6.0)
 
@@ -99,7 +104,7 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
   The server never reads the consent cookie, so pages stay static.
 - Slots are fixed placements rendered by `AdSlot` with a reserved height. No ads on static pages (`slots={false}`), the 404
   page, or the Newsroom preview.
-- Vercel Hobby is non-commercial: the master switch stays off by default and the Ads page says so.
+- Ads are commercial use, which Vercel allows on Pro (the project is on Pro): the master switch still stays off by default, the owner turns it on.
 - E2E for ads runs in the Playwright project `ads`, after all other projects, with Google and Meta domains stubbed.
 
 ## Static pages
@@ -142,4 +147,4 @@ and `AGENTS.md` (this Next.js version differs from training data: read `node_mod
   Check with `unzip -p presscompass-vX.Y.Z.zip presscompass/.git/config` before sending.
 - Terminal commands for the owner use npm and contain no `#` comments (zsh passes them on as arguments).
 - The owner pushes from their Mac. Install commands end with `git commit --amend --no-edit --reset-author` before
-  `git push`, because Vercel Hobby only deploys commits authored by the account owner.
+  `git push`, because Vercel only deploys commits authored by a member of the owner's Vercel team.

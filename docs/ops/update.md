@@ -39,7 +39,7 @@ git push origin main
 git push origin vX.Y.Z
 ```
 
-- `--reset-author` menjadikan commit terakhir milik Anda, karena Vercel Hobby hanya men-deploy commit pemilik akun. Tag dibuat ulang supaya menunjuk commit hasil amend.
+- `--reset-author` menjadikan commit terakhir milik Anda, karena Vercel hanya men-deploy commit yang penulisnya anggota tim Vercel Anda. Tag dibuat ulang supaya menunjuk commit hasil amend.
 - Bila `git push origin main` ditolak (`rejected`, `fetch first` atau `non-fast-forward`), GitHub masih memegang commit yang Anda ubah di versi sebelumnya. Kiriman zip selalu berisi riwayat lengkap, jadi aman menimpanya: `git push --force origin main`.
 - Cek versi terpasang: `git describe --tags`.
 

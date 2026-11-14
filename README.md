@@ -2,7 +2,7 @@
 
 Media berita berbahasa Inggris tentang Indonesia di presscompass.site, lengkap dengan CMS sendiri (Newsroom) di `/newsroom`.
 
-- **Stack:** Next.js 16 (App Router) di Vercel Hobby, Supabase Free (database dan login), Cloudinary Free (gambar).
+- **Stack:** Next.js 16 (App Router) di Vercel Pro (sejak 14 November 2026; sebelumnya Hobby), Supabase Free (database dan login), Cloudinary Free (gambar).
 - **Tanpa Docker.** Semua perintah memakai npm dan Node 26.
 - **Sinkron ke Supabase** hanya lewat kunci bawaan proyek Supabase: Project URL, publishable key, dan secret key.
 
@@ -31,7 +31,7 @@ Langkah pemasangan lengkap: `docs/ops/setup.md`. Memasang versi baru: `docs/ops/
 
 ## Iklan dan halaman (v0.5.0)
 
-- **Ads** di Newsroom: AdSense (Auto ads dan unit), Google Ad Manager, Meta Pixel, kode jaringan lain, tag verifikasi, `ads.txt`, 8 slot tetap, banner persetujuan cookie. Sakelar utama mati sampai Vercel Pro (Hobby hanya non-komersial). Panduan: `docs/ops/setup.md` langkah H.
+- **Ads** di Newsroom: AdSense (Auto ads dan unit), Google Ad Manager, Meta Pixel, kode jaringan lain, tag verifikasi, `ads.txt`, 8 slot tetap, banner persetujuan cookie. Sakelar utama mati bawaan; boleh dinyalakan karena proyek Vercel sudah Pro. Panduan: `docs/ops/setup.md` langkah H.
 - **Pages** di Newsroom: halaman statis (About, Contact, Privacy policy) di `/{alamat}` dan di footer.
 
 ## Editor dan SEO (v0.6.0)

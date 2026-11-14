@@ -32,7 +32,7 @@ Aplikasi tersambung ke Supabase hanya lewat kredensial bawaan proyek Supabase: P
 | Bahasa | Situs dan CMS hanya bahasa Inggris, British English (pemilik, 12 Nov) |
 | Stack | Next.js (App Router) + Supabase + Vercel, semuanya paket gratis. Node 26, npm (pemilik, 13 Nov) |
 | CMS | **Kustom native Supabase**: Supabase Auth dan Postgres + RLS, lewat API key Supabase. Tanpa Payload atau CMS pihak ketiga (pemilik, 13 Nov) |
-| Hosting | Vercel **Hobby**. Sah karena situs **non-komersial** (pemilik, 13 Nov). Pindah ke Pro sebelum ada iklan, langganan berbayar, atau konten bersponsor |
+| Hosting | Vercel **Pro** sejak 14 Nov 2026 (pemilik: "vercel sudah pro"); sebelumnya Hobby (non-komersial). Pro mengizinkan iklan, cron setiap menit, dan bulk redirects |
 | Pengguna CMS | Pemilik sendiri, satu akun admin (pemilik, 13 Nov) |
 | Pengiriman | Zip bernomor versi + perintah terminal npm, seperti point.lat (pemilik, 13 Nov) |
 | Docker | Tidak dipakai di mana pun (pemilik, 13 Nov) |
@@ -66,8 +66,8 @@ Browser pembaca ──► Vercel CDN ──► Next.js (App Router, region sin1)
                                    └──► IndexNow (api.indexnow.org)
 Browser (Newsroom) ──► Cloudinary (unggah langsung dengan tanda tangan dari server)
 Browser pembaca ──► CDN Cloudinary (gambar f_auto,q_auto)
-Supabase Cron (pg_cron + pg_net) ──► GET /api/cron/run setiap 5 menit (rahasia dari Supabase Vault)
-Vercel Cron ──► GET /api/cron/run sekali sehari (cadangan, batas Hobby)
+Vercel Cron (Pro) ──► GET /api/cron/run setiap 5 menit (CRON_SECRET)
+CDN Vercel ──► bulk redirects (308 sungguhan, disalin dari tabel redirects)
 ```
 
 ### Kredensial Supabase (sinkron lewat API key bawaan)
@@ -103,8 +103,7 @@ Pembaca tidak pernah menulis langsung ke Supabase. Form newsletter, kontak, dan 
 ### Jadwal dan pekerjaan latar
 
 - Endpoint `GET /api/cron/run` dengan `Authorization: Bearer CRON_SECRET` menjalankan semua pekerjaan yang jatuh tempo: terbit terjadwal, antrean indexing, cek status indeks, sinkron Search Console harian, pindai tautan, dan pembersihan log.
-- **Supabase Cron** (`pg_cron` + `pg_net`) memanggil endpoint itu setiap 5 menit dengan rahasia dari Supabase Vault. Gratis, dan sekaligus menjaga proyek Supabase Free tidak dijeda karena sepi.
-- **Vercel Cron** sekali sehari sebagai cadangan (Hobby hanya mengizinkan sekali sehari per jadwal).
+- **Vercel Cron** (Pro) memanggil endpoint itu setiap 5 menit; sekaligus menjaga proyek Supabase Free tidak dijeda karena sepi. Supabase Cron (v0.4.0 sampai v0.6.0, ketika Hobby hanya mengizinkan cron harian) tidak diperlukan lagi.
 - Saat konten terbit, antrean langsung dijalankan lewat `after()` Next.js, jadi kabar ke mesin pencari tidak menunggu cron.
 - Klaim pekerjaan atomik (`UPDATE ... RETURNING`), jadi panggilan ganda aman.
 
@@ -401,6 +400,8 @@ Catatan urutan (13 November, permintaan pemilik): iklan, editor ala WordPress de
 
 Catatan lingkup v0.4.0: beranda otomatis (lead + Top stories, baris per rubrik di navigasi, Opinion), artikel, rubrik, penulis, tag (dengan halaman berikutnya), cari, 404, header, footer, pita Latest, sakelar tema, blok Chart, endpoint cron dan revalidasi selesai. Halaman statis (`/{page}`), blok Most read + Newsletter, data band, dan teks footer yang bisa diedit pindah ke Rencana 5 (bersama page builder dan penyusun beranda); Most read dari Search Console tetap Rencana 7. Panduan Supabase Cron 5 menit dipindah dari Rencana 7 ke v0.4.0 (`docs/ops/setup.md` langkah F), karena terbit terjadwal membutuhkannya sekarang; Rencana 7 menambahkan pekerjaan indexing ke endpoint yang sama.
 
+Catatan v0.6.1 (14 November, pemilik: "vercel sudah pro jadi jalankan yang menjadi kendala"): Vercel Cron setiap 5 menit menggantikan Supabase Cron; redirect disalin ke bulk redirects Vercel (308 dengan `Location` di setiap kunjungan, menutup batasan redirect v0.6.0); peringatan Hobby di halaman Ads diganti. 404 kunjungan pertama tetap 200 + noindex (bukan batasan paket Vercel).
+
 Catatan lingkup v0.6.0: editor ala WordPress (bilah atas, tab Article dan SEO, kartu lipat, tombol + dan perintah /), tab SEO dengan skor SEO dan keterbacaan, writing check, kanibalisasi, saran tautan, pratinjau Google dan kartu sosial, metadata, JSON-LD, gambar OG otomatis, sitemap index dan per bulan, Google News sitemap, RSS, robots.txt, SEO settings (dengan sakelar indexing yang menggantikan `noindex` tetap sampai Rencana 8), Redirects, dan log 404 selesai. Skor dihitung ulang di server saat menyimpan. Pemeriksa tautan, Dashboard SEO, Index status, dan Indexing log tetap Rencana 7; tab SEO untuk halaman statis ikut page builder di Rencana 8.
 
 | Rencana | Isi | Versi |
@@ -418,7 +419,7 @@ Catatan lingkup v0.6.0: editor ala WordPress (bilah atas, tab Article dan SEO, k
 ## 18. Setup dari pemilik
 
 1. **GitHub:** repo privat baru `presscompass` (pemilik yang membuat dan mendorong).
-2. **Vercel Hobby:** proyek dari repo itu, region fungsi `sin1`, domain `presscompass.site`.
+2. **Vercel Pro** (Hobby sampai 14 Nov 2026): proyek dari repo itu, region fungsi `sin1`, domain `presscompass.site`.
 3. **Supabase:** satu proyek Free `presscompass` di Singapura.
    - Project URL, publishable key, secret key (Settings, API Keys). Isi ke env Vercel (semua lingkungan) dan `.env` lokal, tidak pernah ke percakapan atau repo.
    - Authentication: matikan pendaftaran, buat satu pengguna (email Anda).
@@ -435,15 +436,15 @@ Catatan lingkup v0.6.0: editor ala WordPress (bilah atas, tab Article dan SEO, k
 
 | Risiko | Mitigasi |
 |---|---|
-| Vercel Hobby hanya untuk non-komersial | situs tanpa iklan dan langganan berbayar; pindah ke Pro sebelum monetisasi |
-| Kuota Hobby (1 juta pemanggilan fungsi, 4 jam CPU aktif, 100 GB transfer per bulan); fitur yang melewati kuota bisa diblokir sampai 30 hari | halaman di-cache CDN, gambar di-cache setahun, pemantauan Usage di runbook |
-| Supabase Free: database 500 MB, egress 5 GB, proyek dijeda setelah 7 hari sepi | halaman di-cache CDN Vercel, Supabase Cron menjaga aktivitas, indikator ukuran database di Dashboard |
+| Biaya Vercel Pro berbasis pemakaian (kredit bulanan, lalu on-demand) | halaman di-cache CDN, gambar di Cloudinary, cron ringan; pantau Vercel Usage dan atur Spend Management |
+| Kembali ke Hobby: cron 5 menit membuat deploy gagal, iklan tidak boleh tampil | `vercel.json` ke jadwal harian + Supabase Cron, matikan iklan (setup langkah F) |
+| Supabase Free: database 500 MB, egress 5 GB, proyek dijeda setelah 7 hari sepi | halaman di-cache CDN Vercel, Vercel Cron 5 menit menjaga aktivitas, indikator ukuran database di Dashboard |
 | Cloudinary Free: 25 kredit per bulan, 1 kredit = 1.000 transformasi atau 1 GB penyimpanan atau 1 GB bandwidth gambar; berkas gambar maksimal 10 MB | transformasi masuk 2560 px, preset `srcset` terbatas, pemakaian kredit dipantau di dashboard Cloudinary (runbook) |
 | Satu proyek untuk produksi, Preview, dan komputer: salah edit atau migrasi rusak langsung mengenai situs live | draf tersembunyi oleh RLS; migrasi hanya menambah dan lulus CI di PostgreSQL dulu; adapter Google dan IndexNow `fake` di luar Production; cadangan mingguan (Rencana 8) |
 | Supabase Free tanpa backup otomatis | ekspor mingguan lewat API (secret key), dienkripsi, disimpan di GitHub (Rencana 8) |
 | Indexing tidak bisa dipaksa | sitemap bersih, Search Console + IndexNow langsung saat terbit, konten berkualitas, status dipantau |
 | CMS kustom lebih banyak dibangun daripada Payload | modul kecil dengan antarmuka jelas, rencana bertahap, tes di setiap rencana |
-| Kode Claude ditolak deploy Vercel Hobby (penulis commit bukan pemilik, temuan point.lat) | perintah pasang memuat `git commit --amend --reset-author` sebelum push |
+| Kode Claude ditolak deploy Vercel (penulis commit bukan anggota tim, temuan point.lat) | perintah pasang memuat `git commit --amend --reset-author` sebelum push |
 | Domain baru lambat dikenal Google | cek status sampai +30 hari, tautan internal kuat, distribusi lewat newsletter dan sosial |
 
 ## 20. Skill per tahap
