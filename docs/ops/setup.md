@@ -177,6 +177,16 @@ Semua diisi di Newsroom, **Site, Ads**. Iklan baru tampil setelah sakelar **Show
 
 Mematikan: hapus centang sakelar, Save. Slot, banner, dan semua kode hilang dari situs dalam beberapa detik; tag verifikasi dan `ads.txt` tetap.
 
+## I. SEO dan Google Search Console
+
+Semua di Newsroom, grup **SEO**.
+
+1. **SEO settings:** periksa nama situs, pola judul (`%s · PressCompass`), judul beranda, dan deskripsi situs (120 sampai 160 huruf). **Publication name** harus sama dengan nama yang nanti tampil di Google News. Isi **Profiles elsewhere** dengan alamat akun resmi PressCompass (X, Instagram, Facebook, LinkedIn), satu per baris, bila sudah ada.
+2. **Menyalakan indexing:** saat situs siap dibaca publik, centang **Let search engines index the site**, Save. Situs Vercel Production berhenti memberi `noindex`; deploy Preview dan `npm run dev` tetap tersembunyi.
+3. **Search Console** (https://search.google.com/search-console): tambahkan properti **Domain** `presscompass.site` dan verifikasi lewat DNS (Google memberi satu baris TXT untuk pengelola domain Anda). Lalu di **Sitemaps**, kirim `https://presscompass.site/sitemap.xml` dan `https://presscompass.site/news-sitemap.xml`. Pengiriman otomatis setiap kali terbit datang di v0.7.0.
+4. **Saat menulis:** buka tab **SEO** di editor, isi **Focus keyphrase**, lalu ikuti daftar **Problems** dan **Improvements**. Skor hanya saran; aturan terbit tidak berubah.
+5. **404 log:** periksa sesekali. Untuk alamat lama yang masih dicari, klik **Create redirect** dan isi alamat barunya.
+
 ## Bila ada masalah
 
 | Gejala | Penyebab dan jalan keluar |
@@ -197,6 +207,8 @@ Mematikan: hapus centang sakelar, Save. Slot, banner, dan semua kode hilang dari
 | Ads: "Add the privacy policy link (under Consent) before turning ads on" | isi Privacy policy link (langkah H2), lalu Save lagi |
 | AdSense menulis ads.txt "Not found" atau "Unauthorized" | buka `https://presscompass.site/ads.txt`: barisnya harus memuat `pub-` dengan angka yang sama dengan ID penerbit; simpan Ads lagi bila perlu, tunggu AdSense memeriksa ulang (bisa sampai beberapa hari) |
 | Slot tampil kosong setelah Accept all | unit AdSense baru atau situs belum disetujui (AdSense mengisi setelah disetujui), atau angka `data-ad-slot` salah |
+| Search Console: "Couldn't fetch" untuk sitemap | buka alamat sitemap di browser; bila tampil XML, tunggu Google mencoba lagi (bisa sehari). Pastikan indexing sudah dinyalakan di SEO settings dan deploy Production yang terbaru |
+| Pratinjau Facebook atau WhatsApp masih memakai gambar lama | platform itu menyimpan kartu lama beberapa hari; tanda Major update memperbarui alamat gambar otomatis. Facebook bisa dipaksa lewat Sharing Debugger |
 | Beranda menulis "The first stories are on their way" | belum ada artikel terbit: jalankan `npm run check`, perbaiki yang bertanda ✗, lalu `npm run content:starter` |
 | `npm run dev`: "Supabase did not answer within 8.5 seconds" | koneksi ke Supabase tersendat atau proyek sedang dijeda/dipulihkan (Supabase Free menjeda proyek setelah 7 hari tanpa aktivitas): buka dashboard Supabase, pastikan proyek aktif, lalu muat ulang halaman |
 | Deploy Vercel diblokir: commit author tidak punya akses | perintah pasang selalu memuat `git commit --amend --no-edit --reset-author` sebelum push; jalankan lalu push lagi |

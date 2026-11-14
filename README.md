@@ -27,12 +27,19 @@ Langkah pemasangan lengkap: `docs/ops/setup.md`. Memasang versi baru: `docs/ops/
 - **Artikel** `/{rubrik}/{slug}` dengan byline, gambar utama, isi (termasuk Chart), sumber, tag, Related, dan More from; **rubrik**, **penulis** `/author/{slug}`, **tag** `/tag/{slug}` (24 artikel per halaman, `/page/2` dan seterusnya), **cari** `/search`, dan halaman 404.
 - Header dengan tanggal (WIB), menu, navigasi rubrik, pita Latest (24 jam terakhir); footer navy dengan sakelar tema Auto, Light, Dark.
 - Halaman disimpan di cache dan diperbarui sendiri setelah perubahan di Newsroom. Artikel terjadwal terbit lewat `/api/cron/run` (Vercel Cron harian, Supabase Cron 5 menit: `docs/ops/setup.md` langkah F).
-- Situs masih `noindex` sampai rilis (Rencana 8).
+- Situs masih `noindex` sampai Anda menyalakan **Let search engines index the site** di Newsroom, SEO settings (v0.6.0).
 
 ## Iklan dan halaman (v0.5.0)
 
 - **Ads** di Newsroom: AdSense (Auto ads dan unit), Google Ad Manager, Meta Pixel, kode jaringan lain, tag verifikasi, `ads.txt`, 8 slot tetap, banner persetujuan cookie. Sakelar utama mati sampai Vercel Pro (Hobby hanya non-komersial). Panduan: `docs/ops/setup.md` langkah H.
 - **Pages** di Newsroom: halaman statis (About, Contact, Privacy policy) di `/{alamat}` dan di footer.
+
+## Editor dan SEO (v0.6.0)
+
+- **Editor artikel ala WordPress:** bilah atas dengan tombol terbit, tab **Article** dan **SEO**, kartu yang bisa dilipat, tombol **+** dan perintah **/** untuk menambah blok.
+- **Tab SEO:** focus keyphrase, pratinjau Google dan kartu sosial, judul SEO dan meta description, skor SEO dan keterbacaan menurut pedoman Google (juga tampil di daftar Articles), saran tautan internal, noindex dan canonical per artikel.
+- **Situs:** metadata lengkap, JSON-LD, gambar sosial otomatis, `/sitemap.xml`, `/news-sitemap.xml`, `/feed.xml`, `robots.txt`.
+- **Newsroom, SEO:** SEO settings (termasuk sakelar indexing), Redirects, 404 log. Panduan: `docs/ops/setup.md` langkah I.
 
 ## Konten awal (v0.4.1)
 

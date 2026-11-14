@@ -1,5 +1,26 @@
 # Riwayat versi
 
+## v0.6.0 · 14 November 2026 · Editor ala WordPress dan skor SEO (Rencana 6)
+
+- **Editor artikel bergaya WordPress:**
+  - bilah atas yang selalu terlihat: status, keadaan simpan, skor SEO dan keterbacaan, History, Preview, **Save draft**, dan tombol utama (Send for review, Publish, Update);
+  - panel samping dengan dua tab, **Article** dan **SEO**, dan kartu yang bisa dilipat (yang berisi kesalahan terbuka sendiri);
+  - tombol **+** untuk menambah blok dengan kotak cari, dan perintah **/** di baris kosong (ketik `/sub`, Enter untuk subjudul);
+  - daftar masalah terbit kini di atas halaman, dengan tautan langsung ke kolomnya.
+- **Tab SEO** (seperti Yoast), dinilai menurut pedoman Google Search Central:
+  - focus keyphrase dan keyphrase terkait; peringatan bila artikel lain memakai keyphrase atau judul SEO yang sama;
+  - pratinjau Google desktop dan HP (judul dipotong menurut lebar piksel seperti Google), judul SEO dan meta description dengan bar panjang;
+  - **SEO analysis** (keyphrase di judul, meta, alamat, standfirst, 100 kata pertama, kepadatan, subjudul; panjang teks; urutan H2/H3; 3 sampai 5 tautan internal; sumber; teks tautan; gambar utama minimal 1200 px untuk Google Discover; alt text) dan **Readability** (Flesch, kalimat panjang, paragraf panjang, subjudul, kalimat pasif, kata transisi, awal kalimat berulang, plus writing check: klise, tanda seru, angka tanpa sumber);
+  - skor 0 sampai 100 (Good, OK, Needs work) yang juga tampil di daftar **Articles**; saran tautan internal dengan tombol Copy link; kartu sosial; Advanced: noindex per artikel, canonical, gambar sosial pilihan.
+- **SEO situs:** judul berpola, meta description, canonical, `max-image-preview:large`, Open Graph dan kartu X di semua halaman; JSON-LD `NewsArticle`/`Article`/`OpinionNewsArticle`, `BreadcrumbList`, `WebSite` + `NewsMediaOrganization`, `ProfilePage`; **gambar sosial otomatis** per artikel (`/og/{id}`: judul Newsreader di samping gambar utama); logo organisasi `/brand/logo.png`.
+- **Berkas untuk mesin pencari:** `/sitemap.xml` (index), `/sitemaps/articles-YYYY-MM.xml`, `sections.xml`, `authors.xml`, `tags.xml`, `pages.xml` (dengan gambar), **Google News sitemap** `/news-sitemap.xml` (48 jam terakhir), RSS `/feed.xml` dan `/{rubrik}/feed.xml`, `robots.txt`.
+- **Newsroom, grup SEO baru:**
+  - **SEO settings:** sakelar **Let search engines index the site** (mati bawaan; situs tetap `noindex` sampai Anda menyalakannya), pola judul, judul beranda, deskripsi situs, nama publikasi Google News, profil sosial, halaman standar redaksi dan koreksi, aturan robots.txt tambahan;
+  - **Redirects:** alihkan alamat lama ke halaman baru (permanen) atau tandai hilang;
+  - **404 log:** alamat yang dicari pembaca tetapi tidak ada, dengan tombol **Create redirect**.
+- **Langkah tambahan:** `npm run db:push` (migrasi baru `20261118000100_seo.sql`) sebelum `git push`. Indexing otomatis ke Google dan IndexNow datang di v0.7.0.
+- Tes: 175 unit, 56 database, 71 E2E.
+
 ## v0.5.2 · 13 November 2026 · Konten lengkap dan pemeriksa setup
 
 - **18 artikel awal** (sebelumnya 10), tiga di setiap rubrik, masing-masing dengan ilustrasi sendiri. Baru: mudik Lebaran 2026, HUT ke-81 RI, cara memilih presiden (dengan Chart hasil 2024), Timor-Leste anggota ke-11 ASEAN, Laut Natuna Utara, Whoosh dan utangnya, populasi komodo, inflasi 2020–2025 (dengan Chart).
